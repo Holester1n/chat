@@ -47,8 +47,9 @@ db.serialize(() => {
   )`);
 });
 
+const JWT_SECRET = 'CrTPLskIDU45k6TcQ34TmifIGAzwo1RCrNL52QHgoEAnjLoHbiR0hfEGxlTeklOU';
 const jwt = require("jsonwebtoken");
-const SECRET = "SUPER_SECRET_KEY";
+const SECRET = process.env.JWT_SECRET || "SUPER_SECRET_KEY";
 
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
@@ -89,6 +90,8 @@ app.get("/", (req, res) => {
   res.send("Server is running");
 });
 
-server.listen(3000, () => {
-  console.log("Server running on port 3000");
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
+
