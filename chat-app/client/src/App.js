@@ -104,7 +104,7 @@ function App() {
         {messages.map((m) => (
           <div key={m.id} className="username">
             <strong>{m.username}:</strong>
-            {m.text}
+            <span className="messageText">{m.text}</span>
             <span className="timestamp">
               {new Date(m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit"})}
             </span>
@@ -112,6 +112,7 @@ function App() {
         ))}
       </div>
 
+      {typingUser && <p className = "typing">{typingUser} печатает...</p>}
       <input
         value={message}
         onChange={(e) => {
@@ -124,7 +125,6 @@ function App() {
         }}
         className="inputPlace"
       />
-      {typingUser && <p className = "typing">{typingUser} печатает...</p>}
       <button className="button" onClick={sendMessage}>Send</button>
     </div>
   );
