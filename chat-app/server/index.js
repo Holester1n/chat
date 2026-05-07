@@ -100,6 +100,14 @@ io.on("connection", (socket) => {
     io.emit("receive_message", msg);
   });
 
+  socket.on("typing", (username) => {
+    socket.broadcast.emit("typing", username);
+  });
+
+  socket.on("stop_typing", () => {
+    socket.broadcast.emit("stop_typing");
+  });
+
   socket.on("disconnect", () => {
     console.log("User disconnected");
   });

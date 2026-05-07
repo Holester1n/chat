@@ -11,6 +11,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [token, setToken] = useState("");
   const [isRegister, setIsRegister] = useState(false);
+  const [typingUser, setTypingUser] = useState("");
   
   useEffect(() => {
     socket.on("load_messages", (msgs) => {
@@ -21,9 +22,14 @@ function App() {
       setMessages((prev) => [...prev, msg]);
     });
 
+    socket.on("typing", (username) => setTypingUser(username));
+    socket.on("stop_typing", () => setTypingUser(""))
+
     return () => {
     socket.off("load_messages");
     socket.off("receive_message");
+    socket.off("typing");
+    socket.off("stop_typing")
     };
   }, []);
 
@@ -108,9 +114,17 @@ function App() {
 
       <input
         value={message}
-        onChange={(e) => setMessage(e.target.value)}
+        onChange={(e) => {
+          setMessage(e.target.value);
+          socket.emit("typing", username);
+          clearTimeout(window.typingTimeout);
+          window.typingTimeout = setTimeout(() => {
+            socket.emit("stop_typing");
+          }, 1000);
+        }}
         className="inputPlace"
       />
+      {typingUser && <p className = "typing">{typingUser} печатает...</p>}
       <button className="button" onClick={sendMessage}>Send</button>
     </div>
   );
