@@ -99,6 +99,9 @@ function App() {
           <div key={m.id} className="username">
             <strong>{m.username}:</strong>
             {m.text}
+            <span className="timestamp">
+              {new Date(m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit"})}
+            </span>
           </div>
         ))}
       </div>

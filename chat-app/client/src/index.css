@@ -36,3 +36,9 @@ code {
 .username {
   margin: 3px;
 }
+
+.timestamp {
+  font-size: 11px;
+  color: gray;
+  margin-left: 8px;
+}
