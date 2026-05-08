@@ -12,42 +12,9 @@ code {
     monospace;
 }
 
-.button {
-  background-color: #ffbb00;
-  border: none;
-  border-radius: 999px;
-  padding: 10px 20px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: 0.2s;
-  margin: 20px;
-}
-
-.button:hover {
-  opacity: 0.8;
-}
-
-.inputPlace {
-  border: 1px #ffbb00 solid;
-  margin: 5px;
-  border-radius: 10px;
-}
-
-.username {
-  margin: 3px;
-}
-
-.timestamp {
-  font-size: 11px;
-  color: gray;
-  margin-left: 8px;
-}
 
 .typing {
   color: gray;
   font-size: 12px;
 }
 
-.messageText {
-  margin-left: 5px;
-}

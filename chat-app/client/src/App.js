@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
-
-const socket = io("https://chat-production-32fc.up.railway.app");
+import Button from './components/UI/button/Button';
+import Input from "./components/UI/input/Input";
+import Message from "./components/Message/Message";
+const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:3000";
+const socket = io(SERVER_URL);
 
 function App() {
   const [message, setMessage] = useState("");
@@ -39,7 +42,8 @@ function App() {
     const msg = {
       text: message,
       id: Date.now(),
-      username: username
+      username: username,
+      timestamp: new Date().toISOString()
     };
 
     socket.emit("send_message", msg);
@@ -51,24 +55,22 @@ function App() {
     <div style={{ padding: 20 }}>
       <h2>{isRegister ? "Register" : "Login"}</h2>
 
-      <input
+      <Input
         placeholder="Username"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
-        className="inputPlace"
       />
 
-      <input
+      <Input
         placeholder="Password"
         type="password"
         value={password}
         onChange={e => setPassword(e.target.value)}
-        className="inputPlace"
       />
 
-      <button className="button" onClick={async () => {
+      <Button onClick={async () => {
         const url = isRegister ? "/register" : "/login";
-        const res = await fetch(`https://chat-production-32fc.up.railway.app${url}`, {
+        const res = await fetch(`${SERVER_URL}${url}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, password })
@@ -83,13 +85,13 @@ function App() {
         setIsLoggedIn(true);
       }}>
         {isRegister ? "Register" : "Login"}
-      </button>
+      </Button>
       
       <p style={{ marginTop: 10 }}>
         {isRegister ? "Already have an account?" : "No account?"}{" "}
-        <button className="button" onClick={() => setIsRegister(!isRegister)}>
+        <Button onClick={() => setIsRegister(!isRegister)}>
           {isRegister ? "Login" : "Register"}
-        </button>
+        </Button>
       </p>
     </div>
   );
@@ -102,18 +104,12 @@ function App() {
 
       <div>
         {messages.map((m) => (
-          <div key={m.id} className="username">
-            <strong>{m.username}:</strong>
-            <span className="messageText">{m.text}</span>
-            <span className="timestamp">
-              {new Date(m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit"})}
-            </span>
-          </div>
+          <Message key={m.id} username={m.username} text={m.text} timestamp={m.timestamp} />
         ))}
       </div>
 
       {typingUser && <p className = "typing">{typingUser} печатает...</p>}
-      <input
+      <Input
         value={message}
         onChange={(e) => {
           setMessage(e.target.value);
@@ -123,9 +119,8 @@ function App() {
             socket.emit("stop_typing");
           }, 1000);
         }}
-        className="inputPlace"
       />
-      <button className="button" onClick={sendMessage}>Send</button>
+      <Button onClick={sendMessage}>Send</Button>
     </div>
   );
 }
