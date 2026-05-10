@@ -1,14 +1,17 @@
 import React from "react";
 import classes from './Message.module.css';
 
-const Message = ({ username, text, timestamp }) => {
+const Message = ({ username, text, timestamp, currentUser }) => {
+    const isOwn = username === currentUser
     return (
-        <div className={classes.Message}>
-            <strong>{username}: </strong>
-            <span className={classes.text}>{text}</span>
-            <span className={classes.timestamp}>
-                {new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </span>
+        <div className={`${classes.message} ${isOwn ? classes.own : classes.other}`}>
+            {!isOwn && <strong className={classes.author}>{username}</strong>}
+            <div className={classes.bubble}>
+                {text}
+                <span className={classes.timestamp}>
+                    {new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+            </div>
         </div>
     );
 };

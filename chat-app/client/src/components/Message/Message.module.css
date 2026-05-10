@@ -3,3 +3,53 @@
   color: gray;
   margin-left: 8px;
 }
+
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(8px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  margin: 4px 0;
+  max-width: 60%;
+  animation: fadeIn 0.2s ease;
+}
+
+.own {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.other {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.bubble {
+  background: #e2dfdf;
+  padding: 10px 14px;
+  border-radius: 18px;
+}
+
+.own .bubble {
+  background: #ffbb00;
+}
+
+.author {
+  font-size: 14px;
+  color: #7a7068;
+  margin-bottom: 6px;
+}
+
+.text {
+  color: #1c1917;
+}
+
