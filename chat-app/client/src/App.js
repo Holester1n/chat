@@ -11,10 +11,10 @@ const socket = io(SERVER_URL);
 function App() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(localStorage.getItem("username") || "");
   const [password, setPassword] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [token, setToken] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+  const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [isRegister, setIsRegister] = useState(false);
   const [typingUser, setTypingUser] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -58,7 +58,7 @@ function App() {
 
   return (
     <div className="app">
-    <Sidebar />
+    <Sidebar setIsLoggedIn={setIsLoggedIn} setToken={setToken} setUsername={setUsername} />
     <Chat
       messages={messages}
       message={message}

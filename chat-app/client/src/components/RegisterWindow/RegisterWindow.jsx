@@ -12,7 +12,8 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
                 <Input
                     placeholder="Username"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}   
+                    onChange={(e) => setUsername(e.target.value)}
+                    className={classes.Input}   
                 />
             </div>
             <div className={classes.input}>
@@ -21,6 +22,7 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
                     type="password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
+                    className={classes.Input}
                 />
             </div>
             {isRegister && (
@@ -30,11 +32,12 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
                         type="password"
                         value={confirmPassword}
                         onChange={e => setConfirmPassword(e.target.value)}
+                        className={classes.Input}
                     />
                 </div>
             )}
             
-            <Button onClick={async () => {
+            <Button className={classes.button} onClick={async () => {
                 const url = isRegister ? "/register" : "/login";
                 if (isRegister && password.trim() !== confirmPassword.trim()) {
                     return alert("Passwords do not match");
@@ -49,6 +52,8 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
 
                 if (!isRegister) {
                     setToken(data.token);
+                    localStorage.setItem("token", data.token);
+                    localStorage.setItem("username", data.username);
                 }
                 setIsLoggedIn(true);
             }}>

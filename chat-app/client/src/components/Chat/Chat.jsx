@@ -10,7 +10,7 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username }) =
     const messagesEndRef = useRef(null);
     const sendMessage = () => {
     if (!message) return;
-
+    
     const msg = {
       text: message,
       id: Date.now(),
@@ -29,9 +29,22 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username }) =
         <div className={classes.container}>
             <div className={classes.chat}>
                 <div className={classes.messages}>
-                    {messages.map((m) => (
-                        <Message currentUser={username} key={m.id} username={m.username} text={m.text} timestamp={m.timestamp} />
-                    ))}
+                    {messages.map((m, index) => {
+                        const currentDate = new Date(m.timestamp).toLocaleDateString();
+                        const prevDate = index > 0 ? new Date(messages[index - 1].timestamp).toLocaleDateString() : null;
+                        const showDivider = currentDate !== prevDate;
+
+                        return (
+                            <React.Fragment key={m.id}>
+                            {showDivider && (
+                                <div className={classes.dateDivider}>
+                                <span>{currentDate}</span>
+                                </div>
+                            )}
+                            <Message currentUser={username} username={m.username} text={m.text} timestamp={m.timestamp} />
+                            </React.Fragment>
+                        );
+                    })}
                     <div ref={messagesEndRef} />
                 </div>
                 
@@ -53,7 +66,7 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username }) =
                             }, 1000);
                         }}
                     />
-                    <Button onClick={sendMessage}>Send</Button>
+                    <Button className={classes.button} onClick={sendMessage}>Send</Button>
                     </div>
                 </div>
             </div>

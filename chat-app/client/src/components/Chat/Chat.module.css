@@ -39,3 +39,25 @@
     color: #9c9189;
     margin: 0 0 6px 4px;
 }
+
+.button {
+    width: 100%;
+    max-width: 250px;
+}
+
+.dateDivider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: #9c9189;
+  font-size: 12px;
+}
+
+.dateDivider::before,
+.dateDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e0e0e0;
+}

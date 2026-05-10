@@ -22,3 +22,12 @@
 .switch:hover {
     color: #ffbb00;
 }
+
+.button {
+    width: 100%;
+    margin: 20px;
+}
+
+.Input {
+    margin-top: 16px;
+}

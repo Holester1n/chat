@@ -4,6 +4,9 @@
     background: #fafaf8;
     flex-shrink: 0;
     padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .title {
