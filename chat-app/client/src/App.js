@@ -17,7 +17,8 @@ function App() {
   const [token, setToken] = useState("");
   const [isRegister, setIsRegister] = useState(false);
   const [typingUser, setTypingUser] = useState("");
-  
+  const [confirmPassword, setConfirmPassword] = useState("");
+
   useEffect(() => {
     socket.on("load_messages", (msgs) => {
       setMessages(msgs);
@@ -49,6 +50,8 @@ function App() {
       setIsRegister={setIsRegister}
       setIsLoggedIn={setIsLoggedIn}
       setToken={setToken}
+      confirmPassword={confirmPassword}
+      setConfirmPassword={setConfirmPassword}
     />
   );
 }

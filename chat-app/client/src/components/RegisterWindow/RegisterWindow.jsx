@@ -4,7 +4,7 @@ import Button from '../UI/button/Button';
 import Input from '../UI/input/Input';
 import { SERVER_URL } from "../../config";
 
-const RegisterWindow = ({ username, setUsername, password, setPassword, isRegister, setIsRegister, setIsLoggedIn, setToken }) => {
+const RegisterWindow = ({ username, setUsername, password, setPassword, isRegister, setIsRegister, setIsLoggedIn, setToken, confirmPassword, setConfirmPassword }) => {
     return (
         <div className={classes.container}>
             <h2>{isRegister ? "Register" : "Login"}</h2>
@@ -23,8 +23,22 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
                     onChange={e => setPassword(e.target.value)}
                 />
             </div>
+            {isRegister && (
+                <div className={classes.input}>
+                    <Input
+                        placeholder="Confirm password"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                    />
+                </div>
+            )}
+            
             <Button onClick={async () => {
                 const url = isRegister ? "/register" : "/login";
+                if (isRegister && password.trim() !== confirmPassword.trim()) {
+                    return alert("Passwords do not match");
+                }
                 const res = await fetch(`${SERVER_URL}${url}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -40,12 +54,13 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
             }}>
             {isRegister ? "Register" : "Login"}
             </Button>
-            <p style={{ marginTop: 10 }}>
-                {isRegister ? "Already have an account?" : "No account?"}{" "}
-                <Button onClick={() => setIsRegister(!isRegister)}>
-                {isRegister ? "Login" : "Register"}
-                </Button>
+            <p 
+                onClick={() => setIsRegister(!isRegister)}
+                className={classes.switch}
+            >
+                {isRegister ? "Already have an account? Login" : "No account? Register"}
             </p>
+            
         </div>
     )
 }
