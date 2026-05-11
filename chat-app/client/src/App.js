@@ -18,6 +18,40 @@ function App() {
   const [isRegister, setIsRegister] = useState(false);
   const [typingUser, setTypingUser] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [users, setUsers] = useState([]);
+  const [activeChat, setActiveChat] = useState(null);
+  const [directMessages, setDirectMessages] = useState([]);
+
+  const sendDirectMessage = () => {
+    if (!message) return;
+    const msg = {
+      sender: username,
+      receiver: activeChat,
+      text: message,
+      timestamp: new Date().toISOString()
+    };
+    
+    socket.emit("send_direct_message", msg);
+    setDirectMessages(prev => [...prev, msg]);
+    setMessage("");
+  };
+
+    useEffect(() => {
+      if (isLoggedIn && username) {
+        socket.emit("set_user", username);
+        fetch(`${SERVER_URL}/users`)
+          .then(res => res.json())
+          .then(data => setUsers(data));
+      }
+
+      socket.on("connect", () => {
+        if (isLoggedIn && username) {
+          socket.emit("set_user", username);
+        }
+      });
+
+      return () => socket.off("connect");
+    }, [isLoggedIn, username]);
 
   useEffect(() => {
     socket.on("load_messages", (msgs) => {
@@ -28,6 +62,10 @@ function App() {
       setMessages((prev) => [...prev, msg]);
     });
 
+    socket.on("receive_direct_message", (msg) => {
+      setDirectMessages(prev => [...prev, msg]);
+    });
+
     socket.on("typing", (username) => setTypingUser(username));
     socket.on("stop_typing", () => setTypingUser(""))
 
@@ -35,9 +73,24 @@ function App() {
     socket.off("load_messages");
     socket.off("receive_message");
     socket.off("typing");
-    socket.off("stop_typing")
+    socket.off("stop_typing");
+    socket.off("receive_direct_message");
     };
   }, []);
+
+  useEffect(() => {
+    if (activeChat) {
+      socket.emit("load_direct_messages", { user1: username, user2: activeChat });
+      
+      socket.on("direct_messages_loaded", (msgs) => {
+        setDirectMessages(msgs);
+      });
+    }
+    
+    return () => {
+      socket.off("direct_messages_loaded");
+    };
+  }, [activeChat]);
 
   if (!isLoggedIn) {
   return (
@@ -58,14 +111,24 @@ function App() {
 
   return (
     <div className="app">
-    <Sidebar setIsLoggedIn={setIsLoggedIn} setToken={setToken} setUsername={setUsername} />
+    <Sidebar 
+      setIsLoggedIn={setIsLoggedIn} 
+      setToken={setToken} 
+      setUsername={setUsername}
+      users={users}
+      activeChat={activeChat}
+      setActiveChat={setActiveChat}
+      currentUser={username}
+    />
     <Chat
-      messages={messages}
+      messages={activeChat ? directMessages : messages}
       message={message}
       setMessage={setMessage}
       typingUser={typingUser}
       socket={socket}
       username={username}
+      onSendMessage={activeChat ? sendDirectMessage : undefined}
+      activeChat={activeChat}
     />
     </div>
   );

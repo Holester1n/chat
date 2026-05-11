@@ -13,3 +13,25 @@
     font-size: 22px;
     font-weight: 700;
 }
+
+.userList {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.userItem {
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.userItem:hover {
+    background: #f0f0f0;
+}
+
+.active {
+    background: #ffbb00;
+    font-weight: bold;
+}

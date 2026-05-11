@@ -3,7 +3,7 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
-
+const onlineUsers = {};
 const { Pool } = require("pg");
 
 const db = new Pool({
@@ -82,8 +82,10 @@ app.post("/login", async (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  console.log("User connected");
-
+  console.log("User connected", socket.id);
+  socket.onAny((event, ...args) => {
+    console.log("Received event:", event, args);
+  });
   (async () => {
     const result = await db.query(
       "SELECT * FROM messages ORDER BY id ASC"
@@ -110,12 +112,55 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected");
+    const user = Object.keys(onlineUsers).find(key => onlineUsers[key] === socket.id);
+    if (user) delete onlineUsers[user];
+  });
+
+  socket.on("set_user", (username) => {
+    onlineUsers[username] = socket.id;
+  });
+
+  socket.on("send_direct_message", async (msg) => {
+    const { sender, receiver, text } = msg;
+    console.log("Direct message from", sender, "to", receiver);
+    
+    try {
+      const result = await db.query(
+        "INSERT INTO direct_messages (sender, receiver, text) VALUES ($1, $2, $3) RETURNING *",
+        [sender, receiver, text]
+      );
+      
+      const savedMsg = result.rows[0];
+      console.log("Saved message:", savedMsg);
+      
+      const receiverSocketId = onlineUsers[receiver];
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("receive_direct_message", savedMsg);
+        console.log("Sent to", receiver, receiverSocketId);
+      }
+    } catch (err) {
+      console.error("Error saving direct message:", err);
+    }
+  });
+
+  socket.on("load_direct_messages", ({ user1, user2 }) => {
+  db.query(
+    "SELECT * FROM direct_messages WHERE (sender=$1 AND receiver=$2) OR (sender=$2 AND receiver=$1) ORDER BY id ASC",
+    [user1, user2],
+    (err, result) => {
+      if (!err) socket.emit("direct_messages_loaded", result.rows);
+      }
+    );
   });
 });
 
 app.get("/", (req, res) => {
   res.send("Server is running");
+});
+
+app.get("/users", async (req, res) => {
+  const result = await db.query("SELECT username FROM users");
+  res.json(result.rows);
 });
 
 const PORT = process.env.PORT || 3000;

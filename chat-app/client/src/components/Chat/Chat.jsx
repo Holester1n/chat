@@ -5,7 +5,7 @@ import Button from '../UI/button/Button';
 import Input from '../UI/input/Input';
 import { useEffect, useRef } from "react";
 
-const Chat = ({ messages, message, setMessage, typingUser, socket, username }) => {
+const Chat = ({ messages, message, setMessage, typingUser, socket, username, activeChat, onSendMessage }) => {
     const inputRef = useRef(null);
     const messagesEndRef = useRef(null);
     const sendMessage = () => {
@@ -21,11 +21,12 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username }) =
     setMessage("");
     inputRef.current?.focus();
     };
-
+    const handleSend = onSendMessage || sendMessage;
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages])
     return (
+
         <div className={classes.container}>
             <div className={classes.chat}>
                 <div className={classes.messages}>
@@ -41,7 +42,7 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username }) =
                                 <span>{currentDate}</span>
                                 </div>
                             )}
-                            <Message currentUser={username} username={m.username} text={m.text} timestamp={m.timestamp} />
+                            <Message currentUser={username} username={m.username || m.sender } text={m.text} timestamp={m.timestamp} />
                             </React.Fragment>
                         );
                     })}
@@ -55,7 +56,7 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username }) =
                         ref={inputRef}
                         value={message}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter') sendMessage();
+                            if (e.key === 'Enter') handleSend();
                         }}
                         onChange={(e) => {
                         setMessage(e.target.value);
@@ -66,7 +67,7 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username }) =
                             }, 1000);
                         }}
                     />
-                    <Button className={classes.button} onClick={sendMessage}>Send</Button>
+                    <Button className={classes.button} onClick={handleSend}>Send</Button>
                     </div>
                 </div>
             </div>
