@@ -4,7 +4,7 @@ import Button from '../UI/button/Button';
 import Input from '../UI/input/Input';
 import { SERVER_URL } from "../../config";
 
-const RegisterWindow = ({ username, setUsername, password, setPassword, isRegister, setIsRegister, setIsLoggedIn, setToken, confirmPassword, setConfirmPassword }) => {
+const RegisterWindow = ({ username, setUsername, password, setPassword, isRegister, setIsRegister, setIsLoggedIn, setToken, confirmPassword, setConfirmPassword, setCurrentUserId }) => {
     return (
         <div className={classes.container}>
             <h2>{isRegister ? "Register" : "Login"}</h2>
@@ -54,8 +54,10 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
                     setToken(data.token);
                     localStorage.setItem("token", data.token);
                     localStorage.setItem("username", data.username);
+                    localStorage.setItem("userId", data.id);
                 }
                 setIsLoggedIn(true);
+                setCurrentUserId(data.id);
             }}>
             {isRegister ? "Register" : "Login"}
             </Button>

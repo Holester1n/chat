@@ -1,0 +1,93 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background: #fafaf8;
+  border-radius: 16px;
+  padding: 32px;
+  width: 360px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #9c9189;
+}
+
+.avatarWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.uploadLabel {
+  font-size: 13px;
+  color: #ffbb00;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.username {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.status {
+  font-size: 14px;
+  color: #9c9189;
+  margin: 0;
+}
+
+.bio {
+  font-size: 14px;
+  color: #1c1917;
+  text-align: center;
+  margin: 0;
+}
+
+.usernameInput, .statusInput, .bioInput {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  background: #fff;
+  outline: none;
+}
+
+.bioInput {
+  resize: none;
+  height: 80px;
+}
+
+.actions {
+  margin-top: 8px;
+}

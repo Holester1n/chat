@@ -5,6 +5,7 @@ import RegisterWindow from "./components/RegisterWindow/RegisterWindow";
 import Sidebar from "./components/Sidebar/Sidebar";
 import './App.css';
 import Button from "./components/UI/button/Button";
+import ProfileModal from "./components/ProfileModal/ProfileModal";
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:3000";
 const socket = io(SERVER_URL);
@@ -23,6 +24,9 @@ function App() {
   const [activeChat, setActiveChat] = useState(null);
   const [directMessages, setDirectMessages] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileUser, setProfileUser] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(localStorage.getItem("userId"));
+
   const sendDirectMessage = () => {
     if (!message) return;
     const msg = {
@@ -60,7 +64,7 @@ function App() {
     });
 
     socket.on("receive_message", (msg) => {
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => [...prev, { ...msg, isOwn: msg.user_id === currentUserId }]);
     });
 
     socket.on("receive_direct_message", (msg) => {
@@ -106,6 +110,7 @@ function App() {
       setToken={setToken}
       confirmPassword={confirmPassword}
       setConfirmPassword={setConfirmPassword}
+      setCurrentUserId={setCurrentUserId}
     />
   );
 }
@@ -124,6 +129,8 @@ function App() {
       activeChat={activeChat}
       setActiveChat={setActiveChat}
       currentUser={username}
+      setProfileUser={setProfileUser}
+      onProfileClick={setProfileUser}
     />
     <Chat
       messages={activeChat ? directMessages : messages}
@@ -135,7 +142,23 @@ function App() {
       onSendMessage={activeChat ? sendDirectMessage : undefined}
       activeChat={activeChat}
       onBurgerClick={() => setSidebarOpen(true)}
+      onProfileClick={setProfileUser}
+      currentUserId={currentUserId}
     />
+    {profileUser && (
+      <ProfileModal
+        username={profileUser}
+        currentUser={username}
+        onClose={() => setProfileUser(null)}
+        onStartChat={(user) => setActiveChat(user)}
+        onUsernameChange={(newName) => {
+          setUsername(newName);
+          localStorage.setItem("username", newName);
+          setProfileUser(newName);
+          console.log("currentUser:", username) 
+        }}
+      />
+    )}
     </div>
   );
 }

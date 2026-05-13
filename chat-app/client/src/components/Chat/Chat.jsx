@@ -5,7 +5,7 @@ import Button from '../UI/button/Button';
 import Input from '../UI/input/Input';
 import { useEffect, useRef } from "react";
 
-const Chat = ({ messages, message, setMessage, typingUser, socket, username, activeChat, onSendMessage, onBurgerClick }) => {
+const Chat = ({ messages, message, setMessage, typingUser, socket, username, activeChat, onSendMessage, onBurgerClick, onProfileClick, currentUserId }) => {
     const inputRef = useRef(null);
     const messagesEndRef = useRef(null);
     const sendMessage = () => {
@@ -45,7 +45,15 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username, act
                                 <span>{currentDate}</span>
                                 </div>
                             )}
-                            <Message currentUser={username} username={m.username || m.sender } text={m.text} timestamp={m.timestamp} />
+                            <Message 
+                            currentUser={username} 
+                            username={m.username || m.sender } 
+                            text={m.text} 
+                            timestamp={m.timestamp} 
+                            onProfileClick={onProfileClick} 
+                            currentUserId={currentUserId} 
+                            userId={m.user_id || m.sender_id}
+                            />
                             </React.Fragment>
                         );
                     })}

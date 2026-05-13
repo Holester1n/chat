@@ -41,6 +41,28 @@
   align-self: flex-start;
 }
 
+.bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profileBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #1c1917;
+}
+
+.profileBtn:hover {
+  background: #f0f0f0;
+}
+
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
