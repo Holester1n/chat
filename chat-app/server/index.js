@@ -13,6 +13,22 @@ const db = new Pool({
   }
 });
 
+const crypto = require("crypto");
+const key = process.env.ENCRYPTION_KEY; // 32 символа
+
+const encrypt = (text) => {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
+    const encrypted = cipher.update(text, "utf8", "hex") + cipher.final("hex");
+    return iv.toString("hex") + ":" + encrypted;
+};
+
+const decrypt = (text) => {
+    const [iv, encrypted] = text.split(":");
+    const decipher = crypto.createDecipheriv("aes-256-cbc", key, Buffer.from(iv, "hex"));
+    return decipher.update(encrypted, "hex", "utf8") + decipher.final("utf8");
+};
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -32,6 +48,14 @@ async function initDB() {
   await db.query(`CREATE TABLE IF NOT EXISTS messages (
     id SERIAL PRIMARY KEY,
     username TEXT,
+    text TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  await db.query(`CREATE TABLE IF NOT EXISTS direct_messages (
+    id SERIAL PRIMARY KEY,
+    sender TEXT,
+    receiver TEXT,
     text TEXT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`);
@@ -58,7 +82,6 @@ app.post("/register", async (req, res) => {
   }
 });
 
-const JWT_SECRET = 'CrTPLskIDU45k6TcQ34TmifIGAzwo1RCrNL52QHgoEAnjLoHbiR0hfEGxlTeklOU';
 const jwt = require("jsonwebtoken");
 const SECRET = process.env.JWT_SECRET || "SUPER_SECRET_KEY";
 
@@ -90,17 +113,24 @@ io.on("connection", (socket) => {
     const result = await db.query(
       "SELECT * FROM messages ORDER BY id ASC"
     );
-
-    socket.emit("load_messages", result.rows);
+    const decrypted = result.rows.map(row => {
+      try {
+        return { ...row, text: decrypt(row.text) };
+      } catch (e) {
+        return { ...row, text: row.text };
+      }
+    });
+    socket.emit("load_messages", decrypted);
   })();
 
   socket.on("send_message", async (msg) => {
-    await db.query(
-      "INSERT INTO messages (username, text) VALUES ($1, $2)",
-      [msg.username, msg.text]
+    const result = await db.query(
+      "INSERT INTO messages (username, text) VALUES ($1, $2) RETURNING *",
+      [msg.username, encrypt(msg.text)]
     );
 
-    io.emit("receive_message", msg);
+    const savedMsg = result.rows[0];
+    io.emit("receive_message", { ...savedMsg, text: msg.text });
   });
 
   socket.on("typing", (username) => {
@@ -125,9 +155,12 @@ io.on("connection", (socket) => {
     console.log("Direct message from", sender, "to", receiver);
     
     try {
+      const encrypted = encrypt(text);
+      console.log("[ENCRYPT] original:", text);
+      console.log("[ENCRYPT] result:", encrypted);
       const result = await db.query(
         "INSERT INTO direct_messages (sender, receiver, text) VALUES ($1, $2, $3) RETURNING *",
-        [sender, receiver, text]
+        [sender, receiver, encrypted]
       );
       
       const savedMsg = result.rows[0];
@@ -135,7 +168,7 @@ io.on("connection", (socket) => {
       
       const receiverSocketId = onlineUsers[receiver];
       if (receiverSocketId) {
-        io.to(receiverSocketId).emit("receive_direct_message", savedMsg);
+        io.to(receiverSocketId).emit("receive_direct_message", { ...savedMsg, text: msg.text });
         console.log("Sent to", receiver, receiverSocketId);
       }
     } catch (err) {
@@ -148,8 +181,18 @@ io.on("connection", (socket) => {
     "SELECT * FROM direct_messages WHERE (sender=$1 AND receiver=$2) OR (sender=$2 AND receiver=$1) ORDER BY id ASC",
     [user1, user2],
     (err, result) => {
-      if (!err) socket.emit("direct_messages_loaded", result.rows);
+      if (!err) {
+        const decrypted = result.rows.map(row => {
+          try {
+            const decryptedText = decrypt(row.text);
+            return { ...row, text: decryptedText };
+          } catch (e) {
+            return { ...row, text: row.text };
+          }
+      });
+        socket.emit("direct_messages_loaded", decrypted);
       }
+    }
     );
   });
 });
