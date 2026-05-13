@@ -4,7 +4,7 @@
     background-color: #fafaf8;
     min-width: 0;
     flex-direction: column;
-    height: 100vh;
+    height: 100dvh;
 }
 
 .messages {
