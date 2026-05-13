@@ -35,3 +35,24 @@
     background: #ffbb00;
     font-weight: bold;
 }
+
+.sidebar button {
+  width: auto;
+  align-self: flex-start;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -300px;
+    top: 0;
+    height: 100vh;
+    z-index: 100;
+    transition: left 0.3s ease;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+}

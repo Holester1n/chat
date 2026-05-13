@@ -2,9 +2,9 @@ import React from "react";
 import classes from './Sidebar.module.css';
 import Logout from "../UI/LogOut/LogOut";
 
-const Sidebar = ({setIsLoggedIn, setToken, setUsername, users, activeChat, setActiveChat, currentUser }) => {
+const Sidebar = ({setIsLoggedIn, setToken, setUsername, users, activeChat, setActiveChat, currentUser, isOpen }) => {
     return (
-        <div className={classes.sidebar}>
+        <div className={`${classes.sidebar} ${isOpen ? classes.open : ''}`}>
             <h2 className={classes.title}>Flicker</h2>
             <div className={classes.userList}>
                 <div 

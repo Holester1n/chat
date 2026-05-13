@@ -105,9 +105,7 @@ app.post("/login", async (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  console.log("User connected", socket.id);
   socket.onAny((event, ...args) => {
-    console.log("Received event:", event, args);
   });
   (async () => {
     const result = await db.query(
@@ -152,24 +150,19 @@ io.on("connection", (socket) => {
 
   socket.on("send_direct_message", async (msg) => {
     const { sender, receiver, text } = msg;
-    console.log("Direct message from", sender, "to", receiver);
     
     try {
       const encrypted = encrypt(text);
-      console.log("[ENCRYPT] original:", text);
-      console.log("[ENCRYPT] result:", encrypted);
       const result = await db.query(
         "INSERT INTO direct_messages (sender, receiver, text) VALUES ($1, $2, $3) RETURNING *",
         [sender, receiver, encrypted]
       );
       
       const savedMsg = result.rows[0];
-      console.log("Saved message:", savedMsg);
       
       const receiverSocketId = onlineUsers[receiver];
       if (receiverSocketId) {
         io.to(receiverSocketId).emit("receive_direct_message", { ...savedMsg, text: msg.text });
-        console.log("Sent to", receiver, receiverSocketId);
       }
     } catch (err) {
       console.error("Error saving direct message:", err);

@@ -4,6 +4,7 @@ import Chat from './components/Chat/Chat';
 import RegisterWindow from "./components/RegisterWindow/RegisterWindow";
 import Sidebar from "./components/Sidebar/Sidebar";
 import './App.css';
+import Button from "./components/UI/button/Button";
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:3000";
 const socket = io(SERVER_URL);
@@ -21,7 +22,7 @@ function App() {
   const [users, setUsers] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
   const [directMessages, setDirectMessages] = useState([]);
-
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const sendDirectMessage = () => {
     if (!message) return;
     const msg = {
@@ -111,7 +112,11 @@ function App() {
 
   return (
     <div className="app">
-    <Sidebar 
+    {sidebarOpen && (
+    <div className="overlay" onClick={() => setSidebarOpen(false)} />
+    )}
+    <Sidebar
+      isOpen={sidebarOpen}
       setIsLoggedIn={setIsLoggedIn} 
       setToken={setToken} 
       setUsername={setUsername}
@@ -129,6 +134,7 @@ function App() {
       username={username}
       onSendMessage={activeChat ? sendDirectMessage : undefined}
       activeChat={activeChat}
+      onBurgerClick={() => setSidebarOpen(true)}
     />
     </div>
   );

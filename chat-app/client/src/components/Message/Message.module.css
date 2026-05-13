@@ -37,6 +37,8 @@
   background: #e2dfdf;
   padding: 10px 14px;
   border-radius: 18px;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .own .bubble {
@@ -53,3 +55,8 @@
   color: #1c1917;
 }
 
+@media (max-width: 768px) {
+  .message {
+    max-width: 85%;
+  }
+}

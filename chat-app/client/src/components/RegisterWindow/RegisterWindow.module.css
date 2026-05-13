@@ -31,3 +31,11 @@
 .Input {
     margin-top: 16px;
 }
+
+@media (max-width: 400px) {
+  .container {
+    width: 100%;
+    padding: 24px 16px;
+    margin: 40px auto;
+  }
+}

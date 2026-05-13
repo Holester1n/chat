@@ -40,6 +40,7 @@
 .app {
   display: flex;
   height: 100vh;
+  flex-direction: row;
 }
 
 * {
@@ -52,4 +53,21 @@
 html, body {
   overflow: hidden;
   height: 100%;
+}
+
+.burgerBtn {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .app {
+    position: relative;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 99;
+  }
 }

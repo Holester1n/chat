@@ -5,7 +5,7 @@ import Button from '../UI/button/Button';
 import Input from '../UI/input/Input';
 import { useEffect, useRef } from "react";
 
-const Chat = ({ messages, message, setMessage, typingUser, socket, username, activeChat, onSendMessage }) => {
+const Chat = ({ messages, message, setMessage, typingUser, socket, username, activeChat, onSendMessage, onBurgerClick }) => {
     const inputRef = useRef(null);
     const messagesEndRef = useRef(null);
     const sendMessage = () => {
@@ -28,7 +28,10 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username, act
     return (
 
         <div className={classes.container}>
-            <div className={classes.chat}>
+            <div className={classes.header}>
+                <Button className={classes.burgerBtn} onClick={onBurgerClick}>☰</Button>
+                <span className={classes.chatTitle}>{activeChat || "General"}</span>
+            </div>
                 <div className={classes.messages}>
                     {messages.map((m, index) => {
                         const currentDate = new Date(m.timestamp).toLocaleDateString();
@@ -70,7 +73,6 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username, act
                     <Button className={classes.button} onClick={handleSend}>Send</Button>
                     </div>
                 </div>
-            </div>
         </div>
     )
 }
