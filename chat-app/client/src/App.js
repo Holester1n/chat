@@ -44,7 +44,7 @@ function App() {
     useEffect(() => {
       if (isLoggedIn && username) {
         socket.emit("set_user", username);
-        fetch(`${SERVER_URL}/users`)
+        fetch(`${SERVER_URL}/conversations/${username}`)
           .then(res => res.json())
           .then(data => setUsers(data));
       }
@@ -156,6 +156,14 @@ function App() {
           localStorage.setItem("username", newName);
           setProfileUser(newName);
           console.log("currentUser:", username) 
+        }}
+        onSave={(oldName, newName) => {
+          setMessages(prev => prev.map(m => 
+            m.username === oldName ? { ...m, username: newName } : m
+          ));
+          setDirectMessages(prev => prev.map(m =>
+            m.sender === oldName ? { ...m, sender: newName } : m
+          ));
         }}
       />
     )}

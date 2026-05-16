@@ -132,12 +132,26 @@ app.patch("/users/:username", async (req, res) => {
   }
 });
 
+app.get("/conversations/:username", async (req, res) => {
+  const { username } = req.params;
+  const result = await db.query(`
+    SELECT DISTINCT 
+      CASE WHEN s.username = $1 THEN r.username ELSE s.username END as username,
+      CASE WHEN s.username = $1 THEN r.avatar_url ELSE s.avatar_url END as avatar_url
+    FROM direct_messages dm
+    JOIN users s ON dm.sender_id = s.id
+    JOIN users r ON dm.receiver_id = r.id
+    WHERE s.username = $1 OR r.username = $1
+  `, [username]);
+  res.json(result.rows);
+});
+
 io.on("connection", (socket) => {
   socket.onAny((event, ...args) => {
   });
   (async () => {
     const result = await db.query(`
-      SELECT m.id, m.text, m.timestamp, u.username
+      SELECT m.id, m.text, m.timestamp, u.username, u.avatar_url
       FROM messages m
       JOIN users u ON m.user_id = u.id
       ORDER BY m.id ASC
@@ -155,14 +169,15 @@ io.on("connection", (socket) => {
   socket.on("send_message", async (msg) => {
     const userResult = await db.query("SELECT id FROM users WHERE username = $1", [msg.username]);
     const userId = userResult.rows[0].id;
-    
+    const avatarUrl = userResult.rows[0].avatar_url;
     const result = await db.query(
       "INSERT INTO messages (user_id, text) VALUES ($1, $2) RETURNING *",
       [userId, encrypt(msg.text)]
     );
 
     const savedMsg = result.rows[0];
-    io.emit("receive_message", { ...savedMsg, text: msg.text, username: msg.username, user_id: userId });
+
+    io.emit("receive_message", { ...savedMsg, text: msg.text, username: msg.username, user_id: userId, avatar_url: avatarUrl });
   });
 
   socket.on("typing", (username) => {
@@ -211,7 +226,7 @@ io.on("connection", (socket) => {
 
   socket.on("load_direct_messages", ({ user1, user2 }) => {
     db.query(`
-      SELECT dm.id, dm.text, dm.timestamp, s.username as sender, r.username as receiver
+      SELECT dm.id, dm.text, dm.timestamp, s.username as sender, r.username as receiver, s.avatar_url as sender_avatar
       FROM direct_messages dm
       JOIN users s ON dm.sender_id = s.id
       JOIN users r ON dm.receiver_id = r.id
@@ -237,6 +252,14 @@ app.get("/", (req, res) => {
 });
 
 app.get("/users", async (req, res) => {
+  const { search } = req.query;
+  if (search) {
+    const result = await db.query(
+      "SELECT username, avatar_url FROM users WHERE username ILIKE $1",
+      [`%${search}%`]
+    );
+    return res.json(result.rows);
+  }
   const result = await db.query("SELECT username FROM users");
   res.json(result.rows);
 });

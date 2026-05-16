@@ -12,6 +12,7 @@
 .title {
     font-size: 22px;
     font-weight: 700;
+    margin-bottom: 10px;
 }
 
 .userList {
@@ -76,5 +77,11 @@
 
   .sidebar.open {
     left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
   }
 }

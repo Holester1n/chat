@@ -1,7 +1,9 @@
 .timestamp {
   font-size: 11px;
   color: gray;
-  margin-left: 8px;
+  flex-shrink: 0;
+  line-height: 1;
+  align-self: flex-end;
 }
 
 @keyframes fadeIn {
@@ -17,20 +19,27 @@
 
 .message {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: flex-end;
   margin: 4px 0;
   max-width: 60%;
   animation: fadeIn 0.2s ease;
+  gap: 8px;
 }
 
 .own {
   align-self: flex-end;
-  align-items: flex-end;
+  flex-direction: row-reverse;
 }
 
 .other {
   align-self: flex-start;
-  align-items: flex-start;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .bubble {
@@ -39,6 +48,10 @@
   border-radius: 18px;
   word-break: break-word;
   overflow-wrap: break-word;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 4px;
 }
 
 .own .bubble {
@@ -48,15 +61,36 @@
 .author {
   font-size: 14px;
   color: #7a7068;
-  margin-bottom: 6px;
+  cursor: pointer;
+  display: block;
+  width: 100%;
 }
 
 .text {
   color: #1c1917;
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
 }
 
 @media (max-width: 768px) {
   .message {
     max-width: 85%;
   }
+}
+
+.avatarRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  flex-shrink: 0;
 }

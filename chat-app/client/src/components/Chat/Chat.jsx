@@ -53,6 +53,7 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username, act
                             onProfileClick={onProfileClick} 
                             currentUserId={currentUserId} 
                             userId={m.user_id || m.sender_id}
+                            avatarUrl={m.avatar_url || m.sender_avatar}
                             />
                             </React.Fragment>
                         );

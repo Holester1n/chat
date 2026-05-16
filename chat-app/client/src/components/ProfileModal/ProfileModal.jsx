@@ -7,7 +7,7 @@ const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:3000";
 const CLOUDINARY_CLOUD = "dvgaqltvv";
 const CLOUDINARY_PRESET = "flicker";
 
-const ProfileModal = ({ username, currentUser, onClose, onStartChat, onUsernameChange }) => {
+const ProfileModal = ({ username, currentUser, onClose, onStartChat, onUsernameChange, onSave }) => {
   const [profile, setProfile] = useState(null);
   const [editing, setEditing] = useState(false);
   const [bio, setBio] = useState("");
@@ -57,6 +57,10 @@ const ProfileModal = ({ username, currentUser, onClose, onStartChat, onUsernameC
       onUsernameChange(newUsername);
     }
     setEditing(false);
+    if (newUsername !== currentUser) {
+      onUsernameChange(newUsername);
+      onSave(currentUser, newUsername);
+    }
   };
 
   if (!profile) return null;
