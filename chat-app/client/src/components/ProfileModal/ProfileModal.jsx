@@ -11,7 +11,6 @@ const ProfileModal = ({ username, currentUser, onClose, onStartChat, onUsernameC
   const [profile, setProfile] = useState(null);
   const [editing, setEditing] = useState(false);
   const [bio, setBio] = useState("");
-  const [status, setStatus] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [newUsername, setNewUsername] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -24,9 +23,8 @@ const ProfileModal = ({ username, currentUser, onClose, onStartChat, onUsernameC
       .then(data => {
         setProfile(data);
         setBio(data.bio || "");
-        setStatus(data.status || "");
         setAvatarUrl(data.avatar_url || "");
-        setNewUsername(data.username);
+        setNewUsername(data.username || username);
       });
   }, [username]);
 
@@ -50,9 +48,9 @@ const ProfileModal = ({ username, currentUser, onClose, onStartChat, onUsernameC
     await fetch(`${SERVER_URL}/users/${currentUser}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bio, status, avatar_url: avatarUrl, newUsername })
+      body: JSON.stringify({ bio, avatar_url: avatarUrl, newUsername })
     });
-    setProfile(prev => ({ ...prev, bio, status, avatar_url: avatarUrl, username: newUsername }));
+    setProfile(prev => ({ ...prev, bio, avatar_url: avatarUrl, username: newUsername }));
     if (newUsername !== currentUser) {
       onUsernameChange(newUsername);
     }
@@ -66,7 +64,7 @@ const ProfileModal = ({ username, currentUser, onClose, onStartChat, onUsernameC
   if (!profile) return null;
 
   return (
-    <div className={classes.overlay} onClick={onClose}>
+    <div className={classes.overlay} onClick={editing ? null : onClose}>
       <div className={classes.modal} onClick={e => e.stopPropagation()}>
         <Button className={classes.close} onClick={onClose}>✕</Button>
 
@@ -92,17 +90,6 @@ const ProfileModal = ({ username, currentUser, onClose, onStartChat, onUsernameC
           />
         ) : (
           <h2 className={classes.username}>{profile.username}</h2>
-        )}
-
-        {editing ? (
-          <Input
-            className={classes.statusInput}
-            placeholder="Статус"
-            value={status}
-            onChange={e => setStatus(e.target.value)}
-          />
-        ) : (
-          <p className={classes.status}>{profile.status || "Нет статуса"}</p>
         )}
 
         {editing ? (

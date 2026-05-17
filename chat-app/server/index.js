@@ -176,6 +176,44 @@ app.get("/conversations/:username", async (req, res) => {
   res.json(result.rows);
 });
 
+app.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+  if (!result.rows[0]) return res.status(400).json({ error: "Email not found" });
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  await db.query("UPDATE users SET reset_code = $1 WHERE email = $2", [code, email]);
+
+  try {
+    await resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: email,
+      subject: "Сброс пароля Fluxly",
+      html: `<p>Ваш код для сброса пароля: <b>${code}</b></p>`
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Resend error:", err);
+    res.status(500).json({ error: "Failed to send email" + err.message });
+  }
+});
+
+app.post("/reset-password", async (req, res) => {
+  const { email, code, newPassword } = req.body;
+  const result = await db.query(
+    "SELECT * FROM users WHERE email = $1 AND reset_code = $2",
+    [email, code]
+  );
+  if (!result.rows[0]) return res.status(400).json({ error: "Invalid code" });
+
+  const hashed = await bcrypt.hash(newPassword, 10);
+  await db.query(
+    "UPDATE users SET password = $1, reset_code = NULL WHERE email = $2",
+    [hashed, email]
+  );
+  res.json({ success: true });
+});
+
 io.on("connection", (socket) => {
   socket.onAny((event, ...args) => {
   });
