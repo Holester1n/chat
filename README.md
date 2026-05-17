@@ -3,7 +3,7 @@
 A real-time messaging app built as an alternative to blocked messengers
 
 ## Live demo
-[gamma-22.vercel.app](https://chat-ashen-gamma-22.vercel.app/) - на данный момент сервис недоступен до покупки кастомного домена 
+fluxly.me
 
 ## Stack
 - React + CSS Modules

@@ -18,7 +18,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendVerificationEmail = async (email, code) => {
   await resend.emails.send({
-    from: "onboarding@resend.dev",
+    from: "noreply@fluxly.me",
     to: email,
     subject: "Подтверждение регистрации в Fluxly",
     html: `<p>Ваш код подтверждения: <b>${code}</b></p>`
@@ -156,7 +156,7 @@ app.post("/forgot-password", async (req, res) => {
 
   try {
     await resend.emails.send({
-      from: "onboarding@resend.dev",
+      from: "noreply@fluxly.me",
       to: email,
       subject: "Сброс пароля Fluxly",
       html: `<p>Ваш код для сброса пароля: <b>${code}</b></p>`
