@@ -13,6 +13,25 @@ const db = new Pool({
   }
 });
 
+const nodemailer = require("nodemailer");
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS,
+  }
+});
+
+const sendVerificationEmail = async (email, code) => {
+  await transporter.sendMail({
+    from: process.env.GMAIL_USER,
+    to: email,
+    subject: "Подтверждение регистрации в Fluxly",
+    html: `<p>Ваш код подтверждения: <b>${code}</b></p>`
+  });
+};
+
 const crypto = require("crypto");
 const key = process.env.ENCRYPTION_KEY; // 32 символа
 
@@ -66,42 +85,53 @@ initDB().catch(console.error);
 const bcrypt = require("bcrypt");
 
 app.post("/register", async (req, res) => {
-  const { username, password } = req.body;
-
+  const { username, email, password } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
 
   try {
     await db.query(
-      "INSERT INTO users (username, password) VALUES ($1, $2)",
-      [username, hashedPassword]
+      "INSERT INTO users (username, email, password, verification_code, verified) VALUES ($1, $2, $3, $4, FALSE)",
+      [username, email, hashedPassword, code]
     );
-
+    await sendVerificationEmail(email, code);
     res.json({ success: true });
   } catch (err) {
-    res.status(400).json({ error: "Username exists" });
+    res.status(400).json({ error: "Username or email already exists" });
   }
+});
+
+app.post("/verify", async (req, res) => {
+  const { email, code } = req.body;
+  const result = await db.query(
+    "SELECT * FROM users WHERE email = $1 AND verification_code = $2",
+    [email, code]
+  );
+  if (!result.rows[0]) return res.status(400).json({ error: "Invalid code" });
+  
+  await db.query(
+    "UPDATE users SET verified = TRUE, verification_code = NULL WHERE email = $1",
+    [email]
+  );
+  res.json({ success: true });
 });
 
 const jwt = require("jsonwebtoken");
 const SECRET = process.env.JWT_SECRET || "SUPER_SECRET_KEY";
 
 app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-
-  const result = await db.query(
-    "SELECT * FROM users WHERE username = $1",
-    [username]
-  );
-
+  const { email, password } = req.body;
+  const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
   const row = result.rows[0];
 
   if (!row) return res.status(400).json({ error: "User not found" });
+  if (!row.verified) return res.status(400).json({ error: "Email not verified" });
 
   const match = await bcrypt.compare(password, row.password);
   if (!match) return res.status(400).json({ error: "Wrong password" });
 
-  const token = jwt.sign({ username }, SECRET);
-  res.json({ token, username, id: row.id });
+  const token = jwt.sign({ username: row.username }, SECRET);
+  res.json({ token, username: row.username, id: row.id });
 });
 
 app.get("/users/:username", async (req, res) => {

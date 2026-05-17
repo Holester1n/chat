@@ -69,19 +69,22 @@
     position: fixed;
     left: -300px;
     top: 0;
-    height: 100vh;
+    height: 100dvh;
     z-index: 100;
     transition: left 0.3s ease;
     box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+    padding-bottom: max(env(safe-area-inset-bottom), 60px);
+    overflow-y: auto;
   }
 
   .sidebar.open {
     left: 0;
   }
-}
 
-@media (max-width: 768px) {
-  .sidebar {
-    padding-bottom: env(safe-area-inset-bottom, 16px);
+  .bottom {
+    position: sticky;
+    bottom: 0;
+    background: #fafaf8;
+    padding-top: 8px;
   }
 }

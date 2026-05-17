@@ -7,7 +7,7 @@ import SearchBar from "../SearchBar/SearchBar";
 const Sidebar = ({setIsLoggedIn, setToken, setUsername, users, activeChat, setActiveChat, currentUser, isOpen, onProfileClick }) => {
     return (
         <div className={`${classes.sidebar} ${isOpen ? classes.open : ''}`}>
-            <h2 className={classes.title}>Flicker</h2>
+            <h2 className={classes.title}>Fluxly</h2>
             <SearchBar currentUser={currentUser} onProfileClick={onProfileClick} />
             <div className={classes.userList}>
                 <div 
