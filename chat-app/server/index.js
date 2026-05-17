@@ -15,17 +15,12 @@ const db = new Pool({
 
 const nodemailer = require("nodemailer");
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS,
-  }
-});
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendVerificationEmail = async (email, code) => {
-  await transporter.sendMail({
-    from: process.env.GMAIL_USER,
+  await resend.emails.send({
+    from: "onboarding@resend.dev",
     to: email,
     subject: "Подтверждение регистрации в Fluxly",
     html: `<p>Ваш код подтверждения: <b>${code}</b></p>`
