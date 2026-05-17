@@ -32,6 +32,9 @@
     background: #f0f0f0;
 }
 
+.Input {
+  padding: 5px;
+}
 .active {
     background: #ffbb00;
     font-weight: bold;
@@ -55,9 +58,10 @@
   font-size: 14px;
   font-weight: 600;
   text-align: left;
-  padding: 8px 12px;
+  padding: 8px 6px;
   border-radius: 8px;
   color: #1c1917;
+  margin-bottom: 10px;
 }
 
 .profileBtn:hover {
@@ -73,7 +77,7 @@
     z-index: 100;
     transition: left 0.3s ease;
     box-shadow: 2px 0 8px rgba(0,0,0,0.15);
-    padding-bottom: max(env(safe-area-inset-bottom), 60px);
+    padding-bottom: max(env(safe-area-inset-bottom), 30px);
     overflow-y: auto;
   }
 

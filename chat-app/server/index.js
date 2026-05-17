@@ -94,7 +94,12 @@ app.post("/register", async (req, res) => {
       "INSERT INTO users (username, email, password, verification_code, verified) VALUES ($1, $2, $3, $4, FALSE)",
       [username, email, hashedPassword, code]
     );
-    await sendVerificationEmail(email, code);
+    try {
+      await sendVerificationEmail(email, code);
+    } catch (mailErr) {
+      console.error("Mail error:", mailErr);
+      return res.status(500).json({ error: "Failed to send email: " + mailErr.message });
+    }
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: "Username or email already exists" });

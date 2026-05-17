@@ -30,6 +30,7 @@
 
 .Input {
     margin-top: 16px;
+    padding: 5px;
 }
 
 @media (max-width: 400px) {
