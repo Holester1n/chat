@@ -13,8 +13,6 @@ const db = new Pool({
   }
 });
 
-const nodemailer = require("nodemailer");
-
 const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -28,7 +26,7 @@ const sendVerificationEmail = async (email, code) => {
 };
 
 const crypto = require("crypto");
-const key = process.env.ENCRYPTION_KEY; // 32 символа
+const key = Buffer.from(process.env.ENCRYPTION_KEY, "utf8");
 
 const encrypt = (text) => {
     const iv = crypto.randomBytes(16);
@@ -51,31 +49,6 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" }
 });
-
-async function initDB() {
-  await db.query(`CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    username TEXT UNIQUE,
-    password TEXT
-  )`);
-
-  await db.query(`CREATE TABLE IF NOT EXISTS messages (
-    id SERIAL PRIMARY KEY,
-    username TEXT,
-    text TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )`);
-
-  await db.query(`CREATE TABLE IF NOT EXISTS direct_messages (
-    id SERIAL PRIMARY KEY,
-    sender TEXT,
-    receiver TEXT,
-    text TEXT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )`);
-}
-
-initDB().catch(console.error);
 
 const bcrypt = require("bcrypt");
 
@@ -117,7 +90,7 @@ app.post("/verify", async (req, res) => {
 });
 
 const jwt = require("jsonwebtoken");
-const SECRET = process.env.JWT_SECRET || "SUPER_SECRET_KEY";
+const SECRET = process.env.JWT_SECRET;
 
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -137,7 +110,7 @@ app.post("/login", async (req, res) => {
 app.get("/users/:username", async (req, res) => {
   const { username } = req.params;
   const result = await db.query(
-    "SELECT username, bio, status, avatar_url FROM users WHERE username = $1",
+    "SELECT username, bio, avatar_url FROM users WHERE username = $1",
     [username]
   );
   if (!result.rows[0]) return res.status(404).json({ error: "User not found" });
@@ -146,15 +119,12 @@ app.get("/users/:username", async (req, res) => {
 
 app.patch("/users/:username", async (req, res) => {
   const { username } = req.params;
-  const { bio, status, avatar_url, newUsername } = req.body;
+  const { bio, avatar_url, newUsername } = req.body;
   
   try {
-    if (newUsername) {
-      await db.query("UPDATE users SET username = $1 WHERE username = $2", [newUsername, username]);
-    }
     await db.query(
-      "UPDATE users SET bio = $1, status = $2, avatar_url = $3 WHERE username = $4",
-      [bio, status, avatar_url, newUsername || username]
+      "UPDATE users SET username = COALESCE($1, username), bio = $2, avatar_url = $3 WHERE username = $4",
+      [newUsername || null, bio, avatar_url, username]
     );
     res.json({ success: true });
   } catch (err) {
@@ -215,14 +185,13 @@ app.post("/reset-password", async (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  socket.onAny((event, ...args) => {
-  });
   (async () => {
     const result = await db.query(`
       SELECT m.id, m.text, m.timestamp, u.username, u.avatar_url
       FROM messages m
       JOIN users u ON m.user_id = u.id
       ORDER BY m.id ASC
+      LIMIT 100
     `);
     const decrypted = result.rows.map(row => {
       try {
@@ -235,17 +204,16 @@ io.on("connection", (socket) => {
   })();
 
   socket.on("send_message", async (msg) => {
-    const userResult = await db.query("SELECT id FROM users WHERE username = $1", [msg.username]);
-    const userId = userResult.rows[0].id;
-    const avatarUrl = userResult.rows[0].avatar_url;
+    const user = onlineUsers[msg.username];
+    if (!user) return;
+
     const result = await db.query(
       "INSERT INTO messages (user_id, text) VALUES ($1, $2) RETURNING *",
-      [userId, encrypt(msg.text)]
+      [user.id, encrypt(msg.text)]
     );
 
     const savedMsg = result.rows[0];
-
-    io.emit("receive_message", { ...savedMsg, text: msg.text, username: msg.username, user_id: userId, avatar_url: avatarUrl });
+    io.emit("receive_message", { ...savedMsg, text: msg.text, username: msg.username, user_id: user.id, avatar_url: user.avatar_url });
   });
 
   socket.on("typing", (username) => {
@@ -257,33 +225,42 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    const user = Object.keys(onlineUsers).find(key => onlineUsers[key] === socket.id);
+    const user = Object.keys(onlineUsers).find(key => onlineUsers[key].socketId === socket.id);
     if (user) delete onlineUsers[user];
   });
 
-  socket.on("set_user", (username) => {
-    onlineUsers[username] = socket.id;
+  socket.on("set_user", async (username) => {
+    const result = await db.query("SELECT id, avatar_url FROM users WHERE username = $1", [username]);
+    const user = result.rows[0];
+    if (user) {
+      onlineUsers[username] = { socketId: socket.id, id: user.id, avatar_url: user.avatar_url };
+    }
   });
 
   socket.on("send_direct_message", async (msg) => {
     const { sender, receiver, text } = msg;
-    
+
     try {
-      const senderResult = await db.query("SELECT id FROM users WHERE username = $1", [sender]);
-      const receiverResult = await db.query("SELECT id FROM users WHERE username = $1", [receiver]);
-      const senderId = senderResult.rows[0].id;
-      const receiverId = receiverResult.rows[0].id;
-      console.log("sender:", sender, "senderId:", senderId);
-      console.log("receiver:", receiver, "receiverId:", receiverId);
+      const senderUser = onlineUsers[sender];
+
+      let receiverId;
+      let receiverSocketId;
+      
+      if (onlineUsers[receiver]) {
+        receiverId = onlineUsers[receiver].id;
+        receiverSocketId = onlineUsers[receiver].socketId;
+      } else {
+        const result = await db.query("SELECT id FROM users WHERE username = $1", [receiver]);
+        receiverId = result.rows[0]?.id;
+      }
+
       const encrypted = encrypt(text);
       const result = await db.query(
         "INSERT INTO direct_messages (sender_id, receiver_id, text) VALUES ($1, $2, $3) RETURNING *",
-        [senderId, receiverId, encrypted]
+        [senderUser.id, receiverId, encrypted]
       );
 
       const savedMsg = result.rows[0];
-      const receiverSocketId = onlineUsers[receiver];
-      console.log("receiverSocketId:", receiverSocketId);
       if (receiverSocketId) {
         io.to(receiverSocketId).emit("receive_direct_message", { ...savedMsg, text, sender, receiver });
       }
