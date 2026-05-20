@@ -69,6 +69,13 @@ function App() {
 
     socket.on("receive_direct_message", (msg) => {
       setDirectMessages(prev => [...prev, msg]);
+      setUsers(prev => {
+        const exists = prev.find(u => u.username === msg.sender);
+        if (!exists) {
+          return [...prev, { username: msg.sender, avatar_url: msg.sender_avatar }];
+        }
+        return prev;
+      });
     });
 
     socket.on("typing", (username) => setTypingUser(username));

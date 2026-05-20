@@ -3,7 +3,7 @@
 A real-time messaging app built as an alternative to blocked messengers
 
 ## Live demo
-fluxly.me
+[fluxly.me](https://fluxly.me/) 
 
 ## Stack
 - React + CSS Modules
