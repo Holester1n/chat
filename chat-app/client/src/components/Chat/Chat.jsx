@@ -5,9 +5,10 @@ import Button from '../UI/button/Button';
 import Input from '../UI/input/Input';
 import { useEffect, useRef } from "react";
 
-const Chat = ({ messages, message, setMessage, typingUser, socket, username, activeChat, onSendMessage, onBurgerClick, onProfileClick, currentUserId }) => {
+const Chat = ({ messages, message, setMessage, typingUser, socket, username, activeChat, onSendMessage, onBurgerClick, onProfileClick, currentUserId, onSendFile }) => {
     const inputRef = useRef(null);
     const messagesEndRef = useRef(null);
+    const fileInputRef = useRef(null);
     const sendMessage = () => {
     if (!message) return;
     
@@ -64,6 +65,17 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username, act
                 <div className={classes.inputArea}>
                     <p className={classes.typing}>{typingUser ? `${typingUser} печатает...` : ' '}</p>
                     <div className={classes.inputRow}>
+                    {/* <Input
+                        type="file"
+                        ref={fileInputRef}
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) onSendFile?.(file);
+                            e.target.value = ""; 
+                        }}
+                    /> 
+                    <Button onClick={() => fileInputRef.current?.click()}>📎</Button> */}
                     <Input
                         ref={inputRef}
                         value={message}

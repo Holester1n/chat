@@ -290,6 +290,30 @@ io.on("connection", (socket) => {
     }
   });
   });
+
+  socket.on("webrtc_offer", ({ to, offer }) => {
+    const target = onlineUsers[to];
+    if (target) {
+      io.to(target.socketId).emit("webrtc_offer", {
+        from: Object.keys(onlineUsers).find(k => onlineUsers[k].socketId === socket.id),
+        offer
+      });
+    }
+  });
+
+  socket.on("webrtc_answer", ({ to, answer }) => {
+    const target = onlineUsers[to];
+    if (target) {
+      io.to(target.socketId).emit("webrtc_answer", { answer });
+    }
+  });
+
+  socket.on("webrtc_ice_candidate", ({ to, candidate }) => {
+    const target = onlineUsers[to];
+    if (target) {
+      io.to(target.socketId).emit("webrtc_ice_candidate", { candidate });
+    }
+  });
 });
 
 app.get("/", (req, res) => {

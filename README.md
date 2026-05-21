@@ -1,6 +1,7 @@
 # Fluxly
 
 A real-time messaging app built as an alternative to blocked messengers
+[telegram with updates](https://t.me/fluxlyme)
 
 ## Live demo
 [fluxly.me](https://fluxly.me/) 
