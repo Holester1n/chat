@@ -6,8 +6,7 @@ const ICE_SERVERS = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
 };
 
-export function useFileTransfer(socket, { username, activeChat }) {
-  const [incomingFile, setIncomingFile] = useState(null);
+export function useFileTransfer(socket, { username, activeChat, onFileReceived }) {
   const [transferProgress, setTransferProgress] = useState(0);
   const [isTransferring, setIsTransferring] = useState(false);
 
@@ -16,7 +15,7 @@ export function useFileTransfer(socket, { username, activeChat }) {
   const receivedSizeRef = useRef(0);
   const expectedSizeRef = useRef(0);
   const fileNameRef = useRef("");
-
+  const fromRef = useRef("");
   const createPeer = () => {
     const peer = new RTCPeerConnection(ICE_SERVERS);
 
@@ -53,6 +52,14 @@ export function useFileTransfer(socket, { username, activeChat }) {
             channel.send(JSON.stringify({ type: "file_done" }));
             setIsTransferring(false);
             setTransferProgress(0);
+            onFileReceived?.({
+              name: file.name,
+              url: URL.createObjectURL(file),
+              from: username,
+              id: Date.now(),
+              timestamp: new Date().toISOString(),
+              isFile: true,
+            });
             return;
           }
           const chunk = buffer.slice(offset, offset + CHUNK_SIZE);
@@ -81,6 +88,7 @@ export function useFileTransfer(socket, { username, activeChat }) {
 
   useEffect(() => {
     socket.on("webrtc_offer", async ({ from, offer }) => {
+      fromRef.current = from;
       console.log("webrtc_offer received from", from);  
       const peer = createPeer();
       peerRef.current = peer;
@@ -100,7 +108,14 @@ export function useFileTransfer(socket, { username, activeChat }) {
             } else if (msg.type === "file_done") {
               const blob = new Blob(receiveBufferRef.current);
               const url = URL.createObjectURL(blob);
-              setIncomingFile({ name: fileNameRef.current, url, size: expectedSizeRef.current });
+              onFileReceived?.({ 
+                name: fileNameRef.current, 
+                url,
+                from: fromRef.current, 
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                isFile: true
+              });
               setIsTransferring(false);
               setTransferProgress(0);
             }
@@ -139,12 +154,8 @@ export function useFileTransfer(socket, { username, activeChat }) {
     };
   }, [activeChat]);
 
-  const clearIncomingFile = () => setIncomingFile(null);
-
   return {
     sendFile,
-    incomingFile,
-    clearIncomingFile,
     transferProgress,
     isTransferring,
   };

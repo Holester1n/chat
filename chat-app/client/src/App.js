@@ -7,9 +7,8 @@ import ProfileModal from "./components/ProfileModal/ProfileModal";
 import { useAuth } from "./hooks/useAuth";
 import { useSocket } from "./hooks/useSocket";
 import { useUsers } from "./hooks/useUsers";
-import './App.css';
 import { useFileTransfer } from "./hooks/useFileTransfer";
-import FileNotification from "./components/FileNotification/FileNotification";
+import './App.css';
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:3000";
 const socket = io(SERVER_URL);
@@ -18,7 +17,7 @@ function App() {
   const [message, setMessage] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileUser, setProfileUser] = useState(null);
-  
+
   const {
     username, setUsername, handleUsernameChange,
     password, setPassword,
@@ -40,13 +39,20 @@ function App() {
     typingUser,
     sendDirectMessage,
     updateMessageUsername,
+    addFileMessage,
   } = useSocket(socket, {
     username,
     activeChat,
     currentUserId,
     onNewDirectMessage: addUserIfMissing,
   });
-  const { sendFile, incomingFile, clearIncomingFile, transferProgress, isTransferring } = useFileTransfer(socket, { username, activeChat });
+
+  const { sendFile, transferProgress, isTransferring } = useFileTransfer(socket, {
+    username,
+    activeChat,
+    onFileReceived: addFileMessage,
+  });
+
   const handleSendDirectMessage = () => {
     sendDirectMessage({ message, receiver: activeChat });
     setMessage("");
@@ -101,7 +107,6 @@ function App() {
         currentUserId={currentUserId}
         onSendFile={activeChat ? sendFile : undefined}
       />
-      <FileNotification file={incomingFile} onClose={clearIncomingFile} />
       {profileUser && (
         <ProfileModal
           username={profileUser}

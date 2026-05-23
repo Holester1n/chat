@@ -71,11 +71,23 @@ export function useSocket(socket, { username, activeChat, currentUserId, onNewDi
     );
   };
 
-  return {
-    messages,
-    directMessages,
-    typingUser,
-    sendDirectMessage,
-    updateMessageUsername,
+  const addFileMessage = (file) => {
+    setDirectMessages((prev) => [...prev, {
+        id: Date.now(),
+        sender: file.from,
+        timestamp: new Date().toISOString(),
+        isFile: true,
+        fileName: file.name,
+        fileUrl: file.url,
+    }]);
   };
+
+  return {
+      messages,
+      directMessages,
+      typingUser,
+      sendDirectMessage,
+      updateMessageUsername,
+      addFileMessage, 
+    };
 }

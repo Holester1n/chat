@@ -3,6 +3,7 @@ import classes from './Chat.module.css';
 import Message from '../Message/Message';
 import Button from '../UI/button/Button';
 import Input from '../UI/input/Input';
+import IconButton from "../UI/IconButton/IconButton";
 import { useEffect, useRef } from "react";
 
 const Chat = ({ messages, message, setMessage, typingUser, socket, username, activeChat, onSendMessage, onBurgerClick, onProfileClick, currentUserId, onSendFile }) => {
@@ -55,6 +56,9 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username, act
                             currentUserId={currentUserId} 
                             userId={m.user_id || m.sender_id}
                             avatarUrl={m.avatar_url || m.sender_avatar}
+                            isFile={m.isFile}
+                            fileName={m.fileName}
+                            fileUrl={m.fileUrl}
                             />
                             </React.Fragment>
                         );
@@ -65,7 +69,7 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username, act
                 <div className={classes.inputArea}>
                     <p className={classes.typing}>{typingUser ? `${typingUser} печатает...` : ' '}</p>
                     <div className={classes.inputRow}>
-                    {/* <Input
+                     <Input
                         type="file"
                         ref={fileInputRef}
                         style={{ display: 'none' }}
@@ -75,7 +79,6 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username, act
                             e.target.value = ""; 
                         }}
                     /> 
-                    <Button onClick={() => fileInputRef.current?.click()}>📎</Button> */}
                     <Input
                         ref={inputRef}
                         value={message}
@@ -91,7 +94,17 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username, act
                             }, 1000);
                         }}
                     />
-                    <Button className={classes.button} onClick={handleSend}>Send</Button>
+                    <IconButton onClick={() => fileInputRef.current?.click()}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48"/>
+                        </svg>
+                    </IconButton>
+                    <IconButton onClick={handleSend}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                    </IconButton>
                     </div>
                 </div>
         </div>

@@ -1,0 +1,23 @@
+.btn {
+  background: #f0f0f0;
+  border: none;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+
+.btn:hover {
+  background: #ffbb00;
+  transform: scale(1.08);
+}
+
+.btn svg {
+  width: 20px;
+  height: 20px;
+}

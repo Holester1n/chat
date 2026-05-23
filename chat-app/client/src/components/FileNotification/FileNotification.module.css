@@ -1,0 +1,44 @@
+.notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #2a2a2a;
+    padding: 12px;
+    border-radius: 12px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    max-width: 320px;
+}
+
+.close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+
+.image {
+    max-width: 300px;
+    max-height: 300px;
+    border-radius: 8px;
+    display: block;
+}
+
+.video {
+    max-width: 300px;
+    border-radius: 8px;
+    display: block;
+}
+
+.audio {
+    max-width: 280px;
+    display: block;
+    margin-top: 8px;
+}
+
+.fileLink {
+    color: #7eb8f7;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}

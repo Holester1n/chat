@@ -1,7 +1,8 @@
+![Fluxly Logo](client/public/img_8677.png)
 # Fluxly
 
 A real-time messaging app built as an alternative to blocked messengers
-[telegram with updates](https://t.me/fluxlyme)
+[telegram channel with updates](https://t.me/fluxlyme)
 
 ## Live demo
 [fluxly.me](https://fluxly.me/) 
@@ -13,6 +14,7 @@ A real-time messaging app built as an alternative to blocked messengers
 - PostgreSQL
 - JWT + bcrypt
 - AES-256-CBC encryption
+- WebRTC (P2P file transfer)
 - Resend (email delivery)
 - Cloudinary (avatar storage)
 - Deployed on Railway + Vercel
@@ -20,13 +22,12 @@ A real-time messaging app built as an alternative to blocked messengers
 ## Features
 - Real-time messaging via WebSocket
 - General chat and direct messages
+- P2P file transfer (images, video, audio, any file) via WebRTC
 - User registration with email verification
 - Password reset via email
 - Message encryption at rest (AES-256-CBC)
-- User profiles with avatars, bio
+- User profiles with avatars and bio
 - User search by username
-- "Is typing" indicator
-- Date dividers between messages
 - Mobile-friendly UI
 
 ## Running locally
@@ -54,3 +55,9 @@ GMAIL_USER=your_gmail
 GMAIL_PASS=your_app_password
 RESEND_API_KEY=your_resend_key
 ```
+
+## Credits
+
+**Logo design** — [Мари](https://t.me/qinai_de3)
+
+---

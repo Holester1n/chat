@@ -64,6 +64,7 @@
   cursor: pointer;
   display: block;
   width: 100%;
+  margin-bottom: 4px;
 }
 
 .text {
@@ -71,6 +72,42 @@
   flex: 1;
   min-width: 0;
   word-break: break-word;
+}
+
+.fileBubble {
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 10px 14px;
+  gap: 6px;
+}
+
+.mediaImage {
+  max-width: 260px;
+  max-height: 260px;
+  border-radius: 8px;
+  display: block;
+}
+
+.mediaVideo {
+  max-width: 260px;
+  border-radius: 8px;
+  display: block;
+}
+
+.mediaAudio {
+  max-width: 250px;
+  display: block;
+}
+
+.mediaFile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f0f0f0;
+  border-radius: 18px;
+  text-decoration: none;
+  color: inherit;
 }
 
 @media (max-width: 768px) {
