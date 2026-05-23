@@ -1,4 +1,4 @@
-![Fluxly Logo](client/public/IMG_8677.png)
+![Fluxly Logo](chat-app/client/public/IMG_8677.png)
 # Fluxly
 
 A real-time messaging app built as an alternative to blocked messengers
