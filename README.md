@@ -1,5 +1,7 @@
-![Fluxly Logo](chat-app/client/public/IMG_8677.png)
-# Fluxly
+<h1>
+  <img src="chat-app/client/public/IMG_8677.png" alt="Fluxly Logo" width="40" style="margin-right: 8px;"/>
+  Fluxly
+</h1>
 
 A real-time messaging app built as an alternative to blocked messengers
 [telegram channel with updates](https://t.me/fluxlyme)
