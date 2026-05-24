@@ -18,6 +18,7 @@ export function useSocket(socket, { username, activeChat, currentUserId, onNewDi
     });
 
     socket.on("receive_direct_message", (msg) => {
+      console.log("receive_direct_message", msg);
       setDirectMessages((prev) => [...prev, msg]);
       onNewDirectMessage?.(msg);
     });
@@ -72,12 +73,13 @@ export function useSocket(socket, { username, activeChat, currentUserId, onNewDi
   };
 
   const addFileMessage = (file) => {
+    console.log("addFileMessage", file);
     setDirectMessages((prev) => [...prev, {
         id: Date.now(),
-        sender: file.from,
+        sender: file.sender,
         timestamp: new Date().toISOString(),
         isFile: true,
-        fileName: file.name,
+        fileName: file.fileName,
         fileUrl: file.fileUrl,
     }]);
   };
