@@ -8,7 +8,7 @@ const Sidebar = ({setIsLoggedIn, setToken, setUsername, users, activeChat, setAc
     return (
         <div className={`${classes.sidebar} ${isOpen ? classes.open : ''}`}>
             <h2 className={classes.title}>
-                <img src="/img_8677.png" alt="Fluxly" className={classes.logo} />
+                <img src='/IMG_8677.png' alt="Fluxly" className={classes.logo} />
                 Fluxly
             </h2>
             <SearchBar currentUser={currentUser} onProfileClick={onProfileClick} />

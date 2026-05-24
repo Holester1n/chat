@@ -78,7 +78,7 @@ export function useSocket(socket, { username, activeChat, currentUserId, onNewDi
         timestamp: new Date().toISOString(),
         isFile: true,
         fileName: file.name,
-        fileUrl: file.url,
+        fileUrl: file.fileUrl,
     }]);
   };
 

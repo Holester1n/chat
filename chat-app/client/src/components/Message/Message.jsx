@@ -2,6 +2,7 @@ import React from "react";
 import classes from './Message.module.css';
 
 const getFileType = (name) => {
+    if (!name) return 'file';
     const ext = name.split('.').pop().toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'image';
     if (['mp4', 'webm', 'ogg', 'mov'].includes(ext)) return 'video';
@@ -14,7 +15,8 @@ const Message = ({ username, text, timestamp, currentUser, onProfileClick, curre
 
     const renderContent = () => {
         if (!isFile) return <span className={classes.text}>{text}</span>;
-
+        if (!fileUrl) return null;
+        
         const type = getFileType(fileName);
         if (type === 'image') return (
             <a href={fileUrl} download={fileName}>

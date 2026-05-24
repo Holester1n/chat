@@ -238,7 +238,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("send_direct_message", async (msg) => {
-    const { sender, receiver, text } = msg;
+    const { sender, receiver, text, fileUrl, fileName } = msg;
 
     try {
       const senderUser = onlineUsers[sender];
@@ -254,15 +254,23 @@ io.on("connection", (socket) => {
         receiverId = result.rows[0]?.id;
       }
 
-      const encrypted = encrypt(text);
+      const encrypted = text ? encrypt(text) : null;
       const result = await db.query(
-        "INSERT INTO direct_messages (sender_id, receiver_id, text) VALUES ($1, $2, $3) RETURNING *",
-        [senderUser.id, receiverId, encrypted]
+        "INSERT INTO direct_messages (sender_id, receiver_id, text, file_url, file_name) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+        [senderUser.id, receiverId, encrypted, fileUrl || null, fileName || null]
       );
 
       const savedMsg = result.rows[0];
       if (receiverSocketId) {
-        io.to(receiverSocketId).emit("receive_direct_message", { ...savedMsg, text, sender, receiver });
+        io.to(receiverSocketId).emit("receive_direct_message", { 
+          ...savedMsg, 
+          text, 
+          sender, 
+          receiver,
+          fileUrl: savedMsg.file_url,
+          fileName: savedMsg.file_name,
+          isFile: !!savedMsg.file_url,
+        });
       }
     } catch (err) {
       console.error("Error saving direct message:", err);
@@ -271,49 +279,33 @@ io.on("connection", (socket) => {
 
   socket.on("load_direct_messages", ({ user1, user2 }) => {
     db.query(`
-      SELECT dm.id, dm.text, dm.timestamp, s.username as sender, r.username as receiver, s.avatar_url as sender_avatar
+      SELECT dm.id, dm.text, dm.timestamp, dm.file_url, dm.file_name,
+             s.username as sender, r.username as receiver, s.avatar_url as sender_avatar
       FROM direct_messages dm
       JOIN users s ON dm.sender_id = s.id
       JOIN users r ON dm.receiver_id = r.id
       WHERE (s.username = $1 AND r.username = $2) OR (s.username = $2 AND r.username = $1)
       ORDER BY dm.id ASC
     `, [user1, user2], (err, result) => {
-    if (!err) {
-      const decrypted = result.rows.map(row => {
-        try {
-          return { ...row, text: decrypt(row.text) };
-        } catch (e) {
-          return { ...row, text: row.text };
-        }
-      });
-      socket.emit("direct_messages_loaded", decrypted);
-    }
-  });
-  });
-
-  socket.on("webrtc_offer", ({ to, offer }) => {
-    const target = onlineUsers[to];
-    if (target) {
-      io.to(target.socketId).emit("webrtc_offer", {
-        from: Object.keys(onlineUsers).find(k => onlineUsers[k].socketId === socket.id),
-        offer
-      });
-    }
+      if (!err) {
+        const decrypted = result.rows.map(row => {
+          try {
+            return { 
+              ...row, 
+              text: row.text ? decrypt(row.text) : null,
+              fileUrl: row.file_url,
+              fileName: row.file_name,
+              isFile: !!row.file_url,
+            };
+          } catch (e) {
+            return { ...row, fileUrl: row.file_url, fileName: row.file_name, isFile: !!row.file_url };
+          }
+        });
+        socket.emit("direct_messages_loaded", decrypted);
+      }
+    });
   });
 
-  socket.on("webrtc_answer", ({ to, answer }) => {
-    const target = onlineUsers[to];
-    if (target) {
-      io.to(target.socketId).emit("webrtc_answer", { answer });
-    }
-  });
-
-  socket.on("webrtc_ice_candidate", ({ to, candidate }) => {
-    const target = onlineUsers[to];
-    if (target) {
-      io.to(target.socketId).emit("webrtc_ice_candidate", { candidate });
-    }
-  });
 });
 
 app.get("/", (req, res) => {

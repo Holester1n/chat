@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import classes from './ProfileModal.module.css';
 import Button from "../UI/button/Button";
 import Input from "../UI/input/Input";
+import { CLOUDINARY_CLOUD, CLOUDINARY_PRESET } from "../../config";
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:3000";
-const CLOUDINARY_CLOUD = "dvgaqltvv";
-const CLOUDINARY_PRESET = "flicker";
+
 
 const ProfileModal = ({ username, currentUser, onClose, onStartChat, onUsernameChange, onSave }) => {
   const [profile, setProfile] = useState(null);
