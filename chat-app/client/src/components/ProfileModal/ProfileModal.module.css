@@ -1,7 +1,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.5);
   z-index: 200;
   display: flex;
   align-items: center;
@@ -10,40 +10,54 @@
 
 .modal {
   background: #fafaf8;
-  border-radius: 16px;
-  padding: 32px;
-  width: 360px;
+  border-radius: 20px;
+  width: 340px;
   max-width: 90vw;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+  overflow: hidden;
   position: relative;
+}
+
+.banner {
+  height: 90px;
+  background: #ffbb00;
 }
 
 .close {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  background: none;
+  top: 12px;
+  right: 12px;
+  background: rgba(0,0,0,0.2);
   border: none;
-  font-size: 18px;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  color: #9c9189;
+  color: #fff;
+  font-size: 14px;
+  padding: 0;
+}
+
+.body {
+  padding: 0 24px 24px;
 }
 
 .avatarWrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  position: relative;
+  margin-top: -40px;
+  margin-bottom: 12px;
+  display: inline-block;
 }
 
 .avatar {
-  width: 96px;
-  height: 96px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
+  border: 3px solid #fafaf8;
   object-fit: cover;
+  display: block;
 }
 
 .uploadLabel {
@@ -51,36 +65,35 @@
   color: #ffbb00;
   cursor: pointer;
   font-weight: 600;
+  display: block;
+  margin-top: 6px;
 }
 
 .username {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.status {
-  font-size: 14px;
-  color: #9c9189;
-  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: #1c1917;
 }
 
 .bio {
   font-size: 14px;
-  color: #1c1917;
-  text-align: center;
-  margin: 0;
+  color: #9c9189;
+  margin: 0 0 20px;
 }
 
-.usernameInput, .statusInput, .bioInput {
+.usernameInput, .bioInput {
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 12px;
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 14px;
-  font-family: 'Inter', sans-serif;
+  font-family: inherit;
   background: #fff;
   outline: none;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  color: #1c1917;
 }
 
 .bioInput {
@@ -90,4 +103,20 @@
 
 .actions {
   margin-top: 8px;
+}
+
+.actions button {
+  width: 100%;
+}
+
+.avatarOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 20px;
 }

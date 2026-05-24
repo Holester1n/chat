@@ -71,3 +71,8 @@ html, body {
     z-index: 99;
   }
 }
+
+body {
+    background: #f0efe9;
+    margin: 0;
+}

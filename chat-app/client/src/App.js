@@ -94,7 +94,7 @@ function App() {
         onProfileClick={setProfileUser}
       />
       <Chat
-        messages={activeChat ? directMessages : messages}
+        messages={activeChat ? directMessages : []}
         message={message}
         setMessage={setMessage}
         typingUser={typingUser}

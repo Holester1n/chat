@@ -13,8 +13,11 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
     const [resetCode, setResetCode] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [resetStep, setResetStep] = useState(1);
+    const [error, setError] = useState("");
+    const [successMsg, setSuccessMsg] = useState("");
 
     const handleSubmit = async () => {
+        setError("");
         if (isRegister) {
             if (password.trim() !== confirmPassword.trim()) return alert("Passwords do not match");
             const res = await fetch(`${SERVER_URL}/register`, {
@@ -23,7 +26,7 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
                 body: JSON.stringify({ username: username.trim(), email: email.trim(), password: password.trim() })
             });
             const data = await res.json();
-            if (data.error) return alert(data.error);
+            if (data.error) return setError(data.error);
             setVerifying(true);
         } else {
             const res = await fetch(`${SERVER_URL}/login`, {
@@ -32,7 +35,7 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
                 body: JSON.stringify({ email: email.trim(), password: password.trim() })
             });
             const data = await res.json();
-            if (data.error) return alert(data.error);
+            if (data.error) return setError(data.error);
             setToken(data.token);
             localStorage.setItem("token", data.token);
             setUsername(data.username);
@@ -50,8 +53,8 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
             body: JSON.stringify({ email: email.trim(), code: code.trim() })
         });
         const data = await res.json();
-        if (data.error) return alert(data.error);
-        alert("Email подтверждён! Теперь войдите.");
+        if (data.error) return setError(data.error);
+        setSuccessMsg("Email подтверждён! Теперь войдите.");
         setVerifying(false);
         setIsRegister(false);
     };
@@ -60,6 +63,7 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
         return (
             <div className={classes.container}>
                 <h2 style={{marginBottom: 20}}>Подтверждение email</h2>
+
                 <p className={classes.verifyMessage}>Код отправлен на {email}</p>
                 <div className={classes.input}>
                     <Input
@@ -69,6 +73,8 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
                         className={classes.Input}
                     />
                 </div>
+                {error && <p className={classes.error}>{error}</p>}
+                {successMsg && <p className={classes.success}>{successMsg}</p>}
                 <Button className={classes.button} onClick={handleVerify}>Подтвердить</Button>
             </div>
         );
@@ -78,6 +84,7 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
         return (
             <div className={classes.container}>
                 <h2 style={{marginBottom: 20}}>Сброс пароля</h2>
+
                 <p className={classes.verifyMessage}>Введите email для получения кода</p>
                 <div className={classes.input}>
                     <Input
@@ -88,6 +95,8 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
                         className={classes.Input}
                     />
                 </div>
+                {error && <p className={classes.error}>{error}</p>}
+                {successMsg && <p className={classes.success}>{successMsg}</p>}
                 <Button className={classes.button} onClick={async () => {
                     const res = await fetch(`${SERVER_URL}/forgot-password`, {
                         method: "POST",
@@ -95,7 +104,7 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
                         body: JSON.stringify({ email: resetEmail.trim() })
                     });
                     const data = await res.json();
-                    if (data.error) return alert(data.error);
+                    if (data.error) return setError(data.error);
                     setResetStep(2);
                 }}>Отправить код</Button>
                 <p className={classes.switch} onClick={() => setForgotPassword(false)}>Назад</p>
@@ -107,6 +116,7 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
         return (
             <div className={classes.container}>
                 <h2>Новый пароль</h2>
+
                 <p className={classes.verifyMessage}>Код отправлен на {resetEmail}</p>
                 <div className={classes.input}>
                     <Input
@@ -125,6 +135,8 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
                         className={classes.Input}
                     />
                 </div>
+                {error && <p className={classes.error}>{error}</p>}
+                {successMsg && <p className={classes.success}>{successMsg}</p>}
                 <Button className={classes.button} onClick={async () => {
                     const res = await fetch(`${SERVER_URL}/reset-password`, {
                         method: "POST",
@@ -132,7 +144,7 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
                         body: JSON.stringify({ email: resetEmail.trim(), code: resetCode.trim(), newPassword: newPassword.trim() })
                     });
                     const data = await res.json();
-                    if (data.error) return alert(data.error);
+                    if (data.error) return setError(data.error);
                     alert("Пароль изменён! Войдите с новым паролем.");
                     setForgotPassword(false);
                     setResetStep(1);
@@ -145,6 +157,7 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
     return (
         <div className={classes.container}>
             <h2>{isRegister ? "Register" : "Login"}</h2>
+
             {isRegister && (
                 <div className={classes.input}>
                     <Input
@@ -171,6 +184,7 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     className={classes.Input}
+                    onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
                 />
             </div>
             {isRegister && (
@@ -184,12 +198,14 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
                     />
                 </div>
             )}
+            {error && <p className={classes.error}>{error}</p>}
+            {successMsg && <p className={classes.success}>{successMsg}</p>}
             <Button className={classes.button} onClick={handleSubmit}>
                 {isRegister ? "Register" : "Login"}
             </Button>
-            <p className={classes.switch} onClick={() => setForgotPassword(true)}>Забыли пароль?</p>
+            <p className={classes.switch} onClick={() => setForgotPassword(true)}>Forgot password?</p>
             <p onClick={() => setIsRegister(!isRegister)} className={classes.switch}>
-                {isRegister ? "Already have an account? Login" : "No account? Register"}
+                {isRegister ? "Already have an account? Login" : "No account? Sign up"}
             </p>
         </div>
     )

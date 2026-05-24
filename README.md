@@ -1,5 +1,5 @@
 <h1>
-  <img src="chat-app/client/public/IMG_8677.png" alt="Fluxly Logo" width="40" style="margin-right: 8px;"/>
+  <img src="chat-app/client/public/IMG_8677.png" alt="Fluxly Logo" width="32" style="margin-right: 8px;"/>
   Fluxly
 </h1>
 
@@ -16,15 +16,14 @@ A real-time messaging app built as an alternative to blocked messengers
 - PostgreSQL
 - JWT + bcrypt
 - AES-256-CBC encryption
-- WebRTC (P2P file transfer)
 - Resend (email delivery)
-- Cloudinary (avatar storage)
+- Cloudinary (file & avatar storage)
 - Deployed on Railway + Vercel
 
 ## Features
 - Real-time messaging via WebSocket
-- General chat and direct messages
-- P2P file transfer (images, video, audio, any file) via WebRTC
+- Direct messages
+- File sharing (images, video, audio, any file)
 - User registration with email verification
 - Password reset via email
 - Message encryption at rest (AES-256-CBC)

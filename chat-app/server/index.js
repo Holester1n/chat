@@ -239,7 +239,8 @@ io.on("connection", (socket) => {
 
   socket.on("send_direct_message", async (msg) => {
     const { sender, receiver, text, fileUrl, fileName } = msg;
-
+    console.log("onlineUsers:", Object.keys(onlineUsers));
+    console.log("receiver:", receiver, "found:", !!onlineUsers[receiver]);
     try {
       const senderUser = onlineUsers[sender];
 
@@ -262,6 +263,11 @@ io.on("connection", (socket) => {
 
       const savedMsg = result.rows[0];
       if (receiverSocketId) {
+            console.log("emitting to receiver:", {
+            fileUrl: savedMsg.file_url,
+            fileName: savedMsg.file_name,
+            isFile: !!savedMsg.file_url,
+        });
         io.to(receiverSocketId).emit("receive_direct_message", { 
           ...savedMsg, 
           text, 
@@ -270,6 +276,7 @@ io.on("connection", (socket) => {
           fileUrl: savedMsg.file_url,
           fileName: savedMsg.file_name,
           isFile: !!savedMsg.file_url,
+          sender_avatar: onlineUsers[sender]?.avatar_url,
         });
       }
     } catch (err) {
@@ -301,6 +308,7 @@ io.on("connection", (socket) => {
             return { ...row, fileUrl: row.file_url, fileName: row.file_name, isFile: !!row.file_url };
           }
         });
+        
         socket.emit("direct_messages_loaded", decrypted);
       }
     });

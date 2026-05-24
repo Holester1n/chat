@@ -27,6 +27,9 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username, act
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages])
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+    }, [activeChat]);
     return (
 
         <div className={classes.container}>
@@ -34,42 +37,48 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username, act
                 <Button className={classes.burgerBtn} onClick={onBurgerClick}>☰</Button>
                 <span className={classes.chatTitle}>{activeChat || "General"}</span>
             </div>
-                <div className={classes.messages}>
-                    {messages.map((m, index) => {
-                        const currentDate = new Date(m.timestamp).toLocaleDateString();
-                        const prevDate = index > 0 ? new Date(messages[index - 1].timestamp).toLocaleDateString() : null;
-                        const showDivider = currentDate !== prevDate;
+                {!activeChat ? (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a09890', fontSize: 15 }}>
+                        Выберите диалог
+                    </div>
+                ) : (
+                    <div className={classes.messages}>
+                        {messages.map((m, index) => {
+                            const currentDate = new Date(m.timestamp).toLocaleDateString();
+                            const prevDate = index > 0 ? new Date(messages[index - 1].timestamp).toLocaleDateString() : null;
+                            const showDivider = currentDate !== prevDate;
 
-                        return (
-                            <React.Fragment key={m.id}>
-                            {showDivider && (
-                                <div className={classes.dateDivider}>
-                                <span>{currentDate}</span>
-                                </div>
-                            )}
-                            <Message 
-                            currentUser={username} 
-                            username={m.username || m.sender } 
-                            text={m.text} 
-                            timestamp={m.timestamp} 
-                            onProfileClick={onProfileClick} 
-                            currentUserId={currentUserId} 
-                            userId={m.user_id || m.sender_id}
-                            avatarUrl={m.avatar_url || m.sender_avatar}
-                            isFile={m.isFile}
-                            fileName={m.fileName}
-                            fileUrl={m.fileUrl}
-                            />
-                            </React.Fragment>
-                        );
-                    })}
-                    <div ref={messagesEndRef} />
-                </div>
+                            return (
+                                <React.Fragment key={m.id}>
+                                    {showDivider && (
+                                        <div className={classes.dateDivider}>
+                                            <span>{currentDate}</span>
+                                        </div>
+                                    )}
+                                    <Message
+                                        currentUser={username}
+                                        username={m.username || m.sender}
+                                        text={m.text}
+                                        timestamp={m.timestamp}
+                                        onProfileClick={onProfileClick}
+                                        currentUserId={currentUserId}
+                                        userId={m.user_id || m.sender_id}
+                                        avatarUrl={m.avatar_url || m.sender_avatar}
+                                        isFile={m.isFile}
+                                        fileName={m.fileName}
+                                        fileUrl={m.fileUrl}
+                                    />
+                                </React.Fragment>
+                            );
+                        })}
+                        <div ref={messagesEndRef} />
+                    </div>
+                )}
                 
                 <div className={classes.inputArea}>
-                    <p className={classes.typing}>{typingUser ? `${typingUser} печатает...` : ' '}</p>
                     <div className={classes.inputRow}>
                      <Input
+                        autoComplete="off"
                         type="file"
                         ref={fileInputRef}
                         style={{ display: 'none' }}
@@ -80,6 +89,7 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username, act
                         }}
                     /> 
                     <Input
+                        autoComplete="off"
                         ref={inputRef}
                         value={message}
                         onKeyDown={(e) => {

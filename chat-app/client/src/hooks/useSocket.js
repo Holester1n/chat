@@ -18,8 +18,12 @@ export function useSocket(socket, { username, activeChat, currentUserId, onNewDi
     });
 
     socket.on("receive_direct_message", (msg) => {
-      console.log("receive_direct_message", msg);
-      setDirectMessages((prev) => [...prev, msg]);
+      setDirectMessages((prev) => [...prev, {
+          ...msg,
+          fileUrl: msg.file_url || msg.fileUrl,
+          fileName: msg.file_name || msg.fileName,
+          isFile: !!(msg.file_url || msg.fileUrl),
+      }]);
       onNewDirectMessage?.(msg);
     });
 
@@ -81,6 +85,7 @@ export function useSocket(socket, { username, activeChat, currentUserId, onNewDi
         isFile: true,
         fileName: file.fileName,
         fileUrl: file.fileUrl,
+        
     }]);
   };
 

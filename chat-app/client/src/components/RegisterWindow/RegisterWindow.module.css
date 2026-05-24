@@ -7,44 +7,77 @@
     align-items: center;
 }
 
+.logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+
+.title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1c1917;
+    margin-bottom: 24px;
+}
+
 .input {
-  width: 100%;
+    width: 100%;
+}
+
+.Input {
+    margin-top: 12px;
+    padding: 5px;
+    background: #f7f6f2;
+}
+
+.button {
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 4px;
 }
 
 .switch {
     margin-top: 12px;
-    font-size: 16px;
-    color: #9c9189;
+    font-size: 14px;
+    color: #a09890;
     cursor: pointer;
-    text-decoration: underline;
 }
 
 .switch:hover {
     color: #ffbb00;
 }
 
-.button {
-    width: 100%;
-    margin: 20px;
-}
-
-.Input {
-    margin-top: 16px;
-    padding: 5px;
-}
-
 .verifyMessage {
-  color: #9c9189;
-  font-size: 14px;
-  margin-bottom: 16px;
-  word-break: keep-all;
-  text-align: center;
-  width: 100%;
-}
-@media (max-width: 400px) {
-  .container {
+    color: #6b6660;
+    font-size: 14px;
+    margin-bottom: 16px;
+    text-align: center;
     width: 100%;
-    padding: 24px 16px;
-    margin: 40px auto;
-  }
+}
+
+.error {
+    color: #c0392b;
+    font-size: 13px;
+    text-align: center;
+    margin: 8px 0 0;
+    width: 100%;
+}
+
+.success {
+    color: #27ae60;
+    font-size: 13px;
+    text-align: center;
+    margin: 8px 0 0;
+    width: 100%;
+}
+
+@media (max-width: 420px) {
+    .container {
+        width: 100%;
+        padding: 28px 16px;
+        margin: 24px auto;
+        border-radius: 0;
+        border: none;
+    }
 }

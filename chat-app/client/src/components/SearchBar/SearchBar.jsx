@@ -11,7 +11,7 @@ const SearchBar = ({ currentUser, onProfileClick }) => {
   const handleSearch = async (e) => {
     const value = e.target.value;
     setSearch(value);
-    if (!value.trim()) return setResults([]);
+    if (!value.trim() || value.trim().length < 4) return setResults([]);
     const res = await fetch(`${SERVER_URL}/users?search=${value}`);
     const data = await res.json();
     setResults(data.filter(u => u.username !== currentUser));
@@ -20,6 +20,7 @@ const SearchBar = ({ currentUser, onProfileClick }) => {
   return (
     <div className={classes.wrapper}>
       <Input
+        autoComplete="off"
         className={classes.input}
         placeholder="Поиск..."
         value={search}

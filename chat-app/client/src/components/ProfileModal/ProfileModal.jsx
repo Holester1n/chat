@@ -64,59 +64,55 @@ const ProfileModal = ({ username, currentUser, onClose, onStartChat, onUsernameC
   if (!profile) return null;
 
   return (
-    <div className={classes.overlay} onClick={editing ? null : onClose}>
-      <div className={classes.modal} onClick={e => e.stopPropagation()}>
-        <Button className={classes.close} onClick={onClose}>✕</Button>
+  <div className={classes.overlay} onClick={editing ? null : onClose}>
+    <div className={classes.modal} onClick={e => e.stopPropagation()}>
+      <div className={classes.banner} />
+      <button className={classes.close} onClick={onClose}>✕</button>
 
+      <div className={classes.body}>
         <div className={classes.avatarWrapper}>
-          <img
-            className={classes.avatar}
-            src={avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${profile.username}`}
-            alt="avatar"
-          />
-          {editing && (
-            <label className={classes.uploadLabel}>
-              {uploading ? "Загрузка..." : "Изменить"}
-              <input type="file" accept="image/*" onChange={handleAvatarUpload} hidden />
-            </label>
-          )}
+          <label style={{ cursor: editing ? 'pointer' : 'default', display: 'block', position: 'relative' }}>
+            <img
+              className={classes.avatar}
+              src={avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${profile.username}`}
+              alt="avatar"
+            />
+            {editing && (
+              <div className={classes.avatarOverlay}>
+                {uploading ? "..." : "✎"}
+              </div>
+            )}
+            {editing && (
+              <input autoComplete="off" type="file" accept="image/*" onChange={handleAvatarUpload} hidden />
+            )}
+          </label>
         </div>
 
         {editing ? (
-          <Input
-            className={classes.usernameInput}
-            value={newUsername}
-            onChange={e => setNewUsername(e.target.value)}
-          />
+          <Input autoComplete="off" className={classes.usernameInput} value={newUsername} onChange={e => setNewUsername(e.target.value)} />
         ) : (
           <h2 className={classes.username}>{profile.username}</h2>
         )}
 
         {editing ? (
-          <textarea
-            className={classes.bioInput}
-            placeholder="О себе"
-            value={bio}
-            onChange={e => setBio(e.target.value)}
-          />
+          <textarea className={classes.bioInput} placeholder="О себе" value={bio} onChange={e => setBio(e.target.value)} />
         ) : (
-          <p className={classes.bio}>{profile.bio || "Нет информации"}</p>
+          <p className={classes.bio}>{profile.bio || ""}</p>
         )}
 
         <div className={classes.actions}>
           {isOwn ? (
-            editing ? (
-              <Button onClick={handleSave}>Сохранить</Button>
-            ) : (
-              <Button onClick={() => setEditing(true)}>Редактировать</Button>
-            )
+            editing
+              ? <Button onClick={handleSave}>Сохранить</Button>
+              : <Button onClick={() => setEditing(true)}>Редактировать</Button>
           ) : (
             <Button onClick={() => { onStartChat(profile.username); onClose(); }}>Написать</Button>
           )}
         </div>
       </div>
     </div>
-  );
-};
+  </div>
+);
+}
 
 export default ProfileModal;
