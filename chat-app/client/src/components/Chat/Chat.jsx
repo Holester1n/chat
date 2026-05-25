@@ -4,29 +4,43 @@ import Message from '../Message/Message';
 import Button from '../UI/button/Button';
 import Input from '../UI/input/Input';
 import IconButton from "../UI/IconButton/IconButton";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const Chat = ({ messages, message, setMessage, typingUser, socket, username, activeChat, onSendMessage, onBurgerClick, onProfileClick, currentUserId, onSendFile }) => {
     const inputRef = useRef(null);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
-    const sendMessage = () => {
-    if (!message) return;
-    
-    const msg = {
-      text: message,
-      id: Date.now(),
-      username: username,
-      timestamp: new Date().toISOString()
+    const scrollContainerRef = useRef(null);
+    const [showScrollBtn, setShowScrollBtn] = useState(false);
+
+    const scrollToBottom = () => {
+        const el = scrollContainerRef.current;
+        if (!el) return;
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     };
-    socket.emit("send_message", msg);
-    setMessage("");
-    inputRef.current?.focus();
+
+    const handleScroll = () => {
+        const el = scrollContainerRef.current;
+        if (!el) return;
+        const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+        setShowScrollBtn(!isNearBottom);
+    };
+
+    const sendMessage = () => {
+        if (!message) return;
+        
+        const msg = {
+            text: message,
+            id: Date.now(),
+            username: username,
+            timestamp: new Date().toISOString()
+        };
+        socket.emit("send_message", msg);
+        setMessage("");
+        inputRef.current?.focus();
     };
     const handleSend = onSendMessage || sendMessage;
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages])
+
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
     }, [activeChat]);
@@ -42,7 +56,7 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username, act
                         Выберите диалог
                     </div>
                 ) : (
-                    <div className={classes.messages}>
+                    <div className={classes.messages} ref={scrollContainerRef} onScroll={handleScroll}>
                         {messages.map((m, index) => {
                             const currentDate = new Date(m.timestamp).toLocaleDateString();
                             const prevDate = index > 0 ? new Date(messages[index - 1].timestamp).toLocaleDateString() : null;
@@ -73,6 +87,14 @@ const Chat = ({ messages, message, setMessage, typingUser, socket, username, act
                         })}
                         <div ref={messagesEndRef} />
                     </div>
+
+                    
+                )}
+
+                {showScrollBtn && (
+                    <button onClick={scrollToBottom} className={classes.scrollBtn}>
+                        ↓
+                    </button>
                 )}
                 
                 <div className={classes.inputArea}>

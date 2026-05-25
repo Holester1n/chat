@@ -5,6 +5,7 @@
     min-width: 0;
     flex-direction: column;
     height: 100dvh;
+    position: relative
 }
 
 .messages {
@@ -14,6 +15,7 @@
     overflow-y: auto;
     padding: 24px 36px;
     -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
 }
 
 .inputArea {
@@ -51,6 +53,24 @@
 
 .header {
     display: none;
+}
+
+.scrollBtn {
+    position: absolute;
+    bottom: 90px;
+    right: 24px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #ffbb00;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transition: opacity 0.2s;
 }
 
 @media (max-width: 768px) {
