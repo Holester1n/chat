@@ -1,146 +1,291 @@
 import React from "react";
-import classes from './Chat.module.css';
-import Message from '../Message/Message';
-import Button from '../UI/button/Button';
-import Input from '../UI/input/Input';
+import classes from "./Chat.module.css";
+import Message from "../Message/Message";
+import Button from "../UI/button/Button";
+import Input from "../UI/input/Input";
 import IconButton from "../UI/IconButton/IconButton";
 import { useEffect, useRef, useState } from "react";
 
-const Chat = ({ messages, message, setMessage, typingUser, socket, username, activeChat, onSendMessage, onBurgerClick, onProfileClick, currentUserId, onSendFile }) => {
-    const inputRef = useRef(null);
-    const messagesEndRef = useRef(null);
-    const fileInputRef = useRef(null);
-    const scrollContainerRef = useRef(null);
-    const [showScrollBtn, setShowScrollBtn] = useState(false);
+const Chat = ({
+  messages,
+  message,
+  setMessage,
+  typingUser,
+  socket,
+  username,
+  activeChat,
+  onSendMessage,
+  onBurgerClick,
+  onProfileClick,
+  currentUserId,
+  onSendFile,
+  onlineSet,
+  users,
+  hasMore,
+  loadingMore,
+  loadMore,
+  directMessages,
+}) => {
+  const inputRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [, forceUpdate] = useState(0);
+  const topSentinelRef = useRef(null);
 
-    const scrollToBottom = () => {
-        const el = scrollContainerRef.current;
-        if (!el) return;
-        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  const scrollToBottom = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  };
+
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    setShowScrollBtn(!isNearBottom);
+  };
+
+  const sendMessage = () => {
+    if (!message) return;
+
+    const msg = {
+      text: message,
+      id: Date.now(),
+      username: username,
+      timestamp: new Date().toISOString(),
     };
+    socket.emit("send_message", msg);
+    setMessage("");
+    inputRef.current?.focus();
+  };
+  const handleSend = onSendMessage || sendMessage;
 
-    const handleScroll = () => {
-        const el = scrollContainerRef.current;
-        if (!el) return;
-        const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-        setShowScrollBtn(!isNearBottom);
-    };
+  const formatLastSeen = (isoString) => {
+    if (!isoString) return "не в сети";
+    const d = new Date(isoString);
+    const now = new Date();
+    const diff = (now - d) / 1000 / 60;
+    if (diff < 1) return "был(а) в сети только что";
+    if (diff < 60) return `был(а) в сети ${Math.floor(diff)} мин назад`;
+    if (diff < 1440)
+      return `был(а) в сети в ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    return `в сети ${d.toLocaleDateString()}`;
+  };
 
-    const sendMessage = () => {
-        if (!message) return;
-        
-        const msg = {
-            text: message,
-            id: Date.now(),
-            username: username,
-            timestamp: new Date().toISOString()
-        };
-        socket.emit("send_message", msg);
-        setMessage("");
-        inputRef.current?.focus();
-    };
-    const handleSend = onSendMessage || sendMessage;
+  const prevChatRef = useRef(null);
+  useEffect(() => {
+    if (activeChat !== prevChatRef.current) {
+      prevChatRef.current = activeChat;
+    }
+  }, [activeChat]);
 
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
-    }, [activeChat]);
-    return (
+  const isFirstLoad = useRef(true);
+  useEffect(() => {
+    if (!messages?.length) return;
+    if (isFirstLoad.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+      isFirstLoad.current = false;
+    }
+  }, [messages]);
 
-        <div className={classes.container}>
-            <div className={classes.header}>
-                <Button className={classes.burgerBtn} onClick={onBurgerClick}>☰</Button>
-                <span className={classes.chatTitle}>{activeChat || "General"}</span>
-            </div>
-                {!activeChat ? (
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a09890', fontSize: 15 }}>
-                        Выберите диалог
-                    </div>
-                ) : (
-                    <div className={classes.messages} ref={scrollContainerRef} onScroll={handleScroll}>
-                        {messages.map((m, index) => {
-                            const currentDate = new Date(m.timestamp).toLocaleDateString();
-                            const prevDate = index > 0 ? new Date(messages[index - 1].timestamp).toLocaleDateString() : null;
-                            const showDivider = currentDate !== prevDate;
+  useEffect(() => {
+    isFirstLoad.current = true;
+  }, [activeChat]);
 
-                            return (
-                                <React.Fragment key={m.id}>
-                                    {showDivider && (
-                                        <div className={classes.dateDivider}>
-                                            <span>{currentDate}</span>
-                                        </div>
-                                    )}
-                                    <Message
-                                        currentUser={username}
-                                        username={m.username || m.sender}
-                                        text={m.text}
-                                        timestamp={m.timestamp}
-                                        onProfileClick={onProfileClick}
-                                        currentUserId={currentUserId}
-                                        userId={m.user_id || m.sender_id}
-                                        avatarUrl={m.avatar_url || m.sender_avatar}
-                                        isFile={m.isFile}
-                                        fileName={m.fileName}
-                                        fileUrl={m.fileUrl}
-                                    />
-                                </React.Fragment>
-                            );
-                        })}
-                        <div ref={messagesEndRef} />
-                    </div>
+  useEffect(() => {
+    if (!topSentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) loadMore();
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(topSentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore]);
 
-                    
-                )}
-
-                {showScrollBtn && (
-                    <button onClick={scrollToBottom} className={classes.scrollBtn}>
-                        ↓
-                    </button>
-                )}
-                
-                <div className={classes.inputArea}>
-                    <div className={classes.inputRow}>
-                     <Input
-                        autoComplete="off"
-                        type="file"
-                        ref={fileInputRef}
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) onSendFile?.(file);
-                            e.target.value = ""; 
-                        }}
-                    /> 
-                    <Input
-                        autoComplete="off"
-                        ref={inputRef}
-                        value={message}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSend();
-                        }}
-                        onChange={(e) => {
-                        setMessage(e.target.value);
-                        socket.emit("typing", username);
-                        clearTimeout(window.typingTimeout);
-                        window.typingTimeout = setTimeout(() => {
-                            socket.emit("stop_typing");
-                            }, 1000);
-                        }}
-                    />
-                    <IconButton onClick={() => fileInputRef.current?.click()}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48"/>
-                        </svg>
-                    </IconButton>
-                    <IconButton onClick={handleSend}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="22" y1="2" x2="11" y2="13"/>
-                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                        </svg>
-                    </IconButton>
-                    </div>
-                </div>
+  useEffect(() => {
+    const interval = setInterval(() => forceUpdate((n) => n + 1), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+  return (
+    <div className={classes.container}>
+      <div className={classes.header}>
+        <div className={classes.burgerBtn}>
+          <IconButton onClick={onBurgerClick}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </IconButton>
         </div>
-    )
-}
+        {activeChat && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              lineHeight: 1.2,
+              gap: 2,
+            }}
+          >
+            <span style={{ fontWeight: 600 }}>{activeChat}</span>
+            <span
+              style={{
+                fontSize: 11,
+                color: onlineSet?.has(activeChat) ? "#22c55e" : "#a09890",
+              }}
+            >
+              {onlineSet?.has(activeChat)
+                ? "● онлайн"
+                : formatLastSeen(
+                    users.find((u) => u.username === activeChat)?.last_seen
+                  )}
+            </span>
+          </div>
+        )}
+      </div>
+      {!activeChat ? (
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#a09890",
+            fontSize: 15,
+          }}
+        >
+          Выберите диалог
+        </div>
+      ) : (
+        <div
+          className={classes.messages}
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+        >
+          <div ref={topSentinelRef} style={{ height: 1 }} />
+          {loadingMore && (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "8px",
+                fontSize: 12,
+                color: "#a09890",
+              }}
+            >
+              загрузка...
+            </div>
+          )}
+          {messages.map((m, index) => {
+            const currentDate = new Date(m.timestamp).toLocaleDateString();
+            const prevDate =
+              index > 0
+                ? new Date(messages[index - 1].timestamp).toLocaleDateString()
+                : null;
+            const showDivider = currentDate !== prevDate;
+
+            return (
+              <React.Fragment key={m.id}>
+                {showDivider && (
+                  <div className={classes.dateDivider}>
+                    <span>{currentDate}</span>
+                  </div>
+                )}
+                <Message
+                  currentUser={username}
+                  username={m.username || m.sender}
+                  text={m.text}
+                  timestamp={m.timestamp}
+                  onProfileClick={onProfileClick}
+                  currentUserId={currentUserId}
+                  userId={m.user_id || m.sender_id}
+                  avatarUrl={m.avatar_url || m.sender_avatar}
+                  isFile={m.isFile}
+                  fileName={m.fileName}
+                  fileUrl={m.fileUrl}
+                  is_read={m.is_read}
+                />
+              </React.Fragment>
+            );
+          })}
+          <div ref={messagesEndRef} />
+        </div>
+      )}
+
+      {showScrollBtn && (
+        <button onClick={scrollToBottom} className={classes.scrollBtn}>
+          ↓
+        </button>
+      )}
+
+      <div className={classes.inputArea}>
+        <div className={classes.inputRow}>
+          <Input
+            autoComplete="off"
+            type="file"
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) onSendFile?.(file);
+              e.target.value = "";
+            }}
+          />
+          <Input
+            autoComplete="off"
+            ref={inputRef}
+            value={message}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSend();
+            }}
+            onChange={(e) => {
+              setMessage(e.target.value);
+              socket.emit("typing", username);
+              clearTimeout(window.typingTimeout);
+              window.typingTimeout = setTimeout(() => {
+                socket.emit("stop_typing");
+              }, 1000);
+            }}
+          />
+          <IconButton onClick={() => fileInputRef.current?.click()}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48" />
+            </svg>
+          </IconButton>
+          <IconButton onClick={handleSend}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </IconButton>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default Chat;

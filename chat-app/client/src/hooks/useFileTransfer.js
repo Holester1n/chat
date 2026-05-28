@@ -1,7 +1,10 @@
 import { CLOUDINARY_CLOUD, CLOUDINARY_PRESET } from "../config";
 import { useState } from "react";
 
-export function useFileTransfer(socket, { username, activeChat, onFileReceived }) {
+export function useFileTransfer(
+  socket,
+  { username, activeChat, onFileReceived }
+) {
   const [transferProgress, setTransferProgress] = useState(0);
   const [isTransferring, setIsTransferring] = useState(false);
 
@@ -31,11 +34,10 @@ export function useFileTransfer(socket, { username, activeChat, onFileReceived }
         id: Date.now(),
       };
 
-      socket.emit("send_direct_message", { 
-        ...fileMsg, 
+      socket.emit("send_direct_message", {
+        ...fileMsg,
       });
       onFileReceived?.({ ...fileMsg, from: username });
-
     } catch (err) {
       console.error("Upload error:", err);
     } finally {

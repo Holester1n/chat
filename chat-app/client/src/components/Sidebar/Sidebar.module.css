@@ -107,6 +107,40 @@
     align-self: flex-start;
 }
 
+.avatarWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid #f0efe9;
+  transition: background 0.3s;
+}
+
+.dotOnline  { background: #22c55e; }
+.dotOffline { background: #d1d0ca; }
+
+.unreadBadge {
+  margin-left: auto;
+  background: #ffbb00;
+  color: #1c1917;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
 @media (max-width: 768px) {
     .sidebar {
         position: fixed;

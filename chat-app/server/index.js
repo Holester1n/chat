@@ -9,8 +9,8 @@ const { Pool } = require("pg");
 const db = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false
-  }
+    rejectUnauthorized: false,
+  },
 });
 
 const { Resend } = require("resend");
@@ -21,24 +21,41 @@ const sendVerificationEmail = async (email, code) => {
     from: "noreply@fluxly.me",
     to: email,
     subject: "Подтверждение регистрации в Fluxly",
-    html: `<p>Ваш код подтверждения: <b>${code}</b></p>`
+    html: `<p>Ваш код подтверждения: <b>${code}</b></p>`,
   });
+};
+
+const removeUser = (socketId) => {
+  const username = Object.keys(onlineUsers).find(
+    (key) => onlineUsers[key].socketId === socketId
+  );
+  if (username) {
+    db.query("UPDATE users SET last_seen = NOW() WHERE username = $1", [
+      username,
+    ]);
+    delete onlineUsers[username];
+    io.emit("online_users", Object.keys(onlineUsers));
+  }
 };
 
 const crypto = require("crypto");
 const key = Buffer.from(process.env.ENCRYPTION_KEY, "utf8");
 
 const encrypt = (text) => {
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
-    const encrypted = cipher.update(text, "utf8", "hex") + cipher.final("hex");
-    return iv.toString("hex") + ":" + encrypted;
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
+  const encrypted = cipher.update(text, "utf8", "hex") + cipher.final("hex");
+  return iv.toString("hex") + ":" + encrypted;
 };
 
 const decrypt = (text) => {
-    const [iv, encrypted] = text.split(":");
-    const decipher = crypto.createDecipheriv("aes-256-cbc", key, Buffer.from(iv, "hex"));
-    return decipher.update(encrypted, "hex", "utf8") + decipher.final("utf8");
+  const [iv, encrypted] = text.split(":");
+  const decipher = crypto.createDecipheriv(
+    "aes-256-cbc",
+    key,
+    Buffer.from(iv, "hex")
+  );
+  return decipher.update(encrypted, "hex", "utf8") + decipher.final("utf8");
 };
 
 const app = express();
@@ -47,7 +64,7 @@ app.use(express.json());
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "*" }
+  cors: { origin: "*" },
 });
 
 const bcrypt = require("bcrypt");
@@ -66,7 +83,9 @@ app.post("/register", async (req, res) => {
       await sendVerificationEmail(email, code);
     } catch (mailErr) {
       console.error("Mail error:", mailErr);
-      return res.status(500).json({ error: "Failed to send email: " + mailErr.message });
+      return res
+        .status(500)
+        .json({ error: "Failed to send email: " + mailErr.message });
     }
     res.json({ success: true });
   } catch (err) {
@@ -81,7 +100,7 @@ app.post("/verify", async (req, res) => {
     [email, code]
   );
   if (!result.rows[0]) return res.status(400).json({ error: "Invalid code" });
-  
+
   await db.query(
     "UPDATE users SET verified = TRUE, verification_code = NULL WHERE email = $1",
     [email]
@@ -94,11 +113,14 @@ const SECRET = process.env.JWT_SECRET;
 
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+  const result = await db.query("SELECT * FROM users WHERE email = $1", [
+    email,
+  ]);
   const row = result.rows[0];
 
   if (!row) return res.status(400).json({ error: "User not found" });
-  if (!row.verified) return res.status(400).json({ error: "Email not verified" });
+  if (!row.verified)
+    return res.status(400).json({ error: "Email not verified" });
 
   const match = await bcrypt.compare(password, row.password);
   if (!match) return res.status(400).json({ error: "Wrong password" });
@@ -120,7 +142,7 @@ app.get("/users/:username", async (req, res) => {
 app.patch("/users/:username", async (req, res) => {
   const { username } = req.params;
   const { bio, avatar_url, newUsername } = req.body;
-  
+
   try {
     await db.query(
       "UPDATE users SET username = COALESCE($1, username), bio = $2, avatar_url = $3 WHERE username = $4",
@@ -135,31 +157,52 @@ app.patch("/users/:username", async (req, res) => {
 app.get("/conversations/:username", async (req, res) => {
   const { username } = req.params;
   const result = await db.query(`
-    SELECT DISTINCT 
-      CASE WHEN s.username = $1 THEN r.username ELSE s.username END as username,
-      CASE WHEN s.username = $1 THEN r.avatar_url ELSE s.avatar_url END as avatar_url
-    FROM direct_messages dm
-    JOIN users s ON dm.sender_id = s.id
-    JOIN users r ON dm.receiver_id = r.id
-    WHERE s.username = $1 OR r.username = $1
+    SELECT DISTINCT ON (other_user) 
+      other_user as username,
+      other_avatar as avatar_url,
+      other_last_seen as last_seen,
+      (
+        SELECT COUNT(*) FROM direct_messages dm2
+        JOIN users s2 ON dm2.sender_id = s2.id
+        JOIN users r2 ON dm2.receiver_id = r2.id
+        WHERE r2.username = $1 
+          AND s2.username = other_user
+          AND dm2.is_read = FALSE
+      ) as unread_count
+    FROM (
+      SELECT 
+        CASE WHEN s.username = $1 THEN r.username ELSE s.username END as other_user,
+        CASE WHEN s.username = $1 THEN r.avatar_url ELSE s.avatar_url END as other_avatar,
+        CASE WHEN s.username = $1 THEN r.last_seen ELSE s.last_seen END as other_last_seen
+      FROM direct_messages dm
+      JOIN users s ON dm.sender_id = s.id
+      JOIN users r ON dm.receiver_id = r.id
+      WHERE s.username = $1 OR r.username = $1
+    ) sub
   `, [username]);
   res.json(result.rows);
 });
 
 app.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
-  const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
-  if (!result.rows[0]) return res.status(400).json({ error: "Email not found" });
+  const result = await db.query("SELECT * FROM users WHERE email = $1", [
+    email,
+  ]);
+  if (!result.rows[0])
+    return res.status(400).json({ error: "Email not found" });
 
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-  await db.query("UPDATE users SET reset_code = $1 WHERE email = $2", [code, email]);
+  await db.query("UPDATE users SET reset_code = $1 WHERE email = $2", [
+    code,
+    email,
+  ]);
 
   try {
     await resend.emails.send({
       from: "noreply@fluxly.me",
       to: email,
       subject: "Сброс пароля Fluxly",
-      html: `<p>Ваш код для сброса пароля: <b>${code}</b></p>`
+      html: `<p>Ваш код для сброса пароля: <b>${code}</b></p>`,
     });
     res.json({ success: true });
   } catch (err) {
@@ -193,7 +236,7 @@ io.on("connection", (socket) => {
       ORDER BY m.id ASC
       LIMIT 100
     `);
-    const decrypted = result.rows.map(row => {
+    const decrypted = result.rows.map((row) => {
       try {
         return { ...row, text: decrypt(row.text) };
       } catch (e) {
@@ -213,7 +256,13 @@ io.on("connection", (socket) => {
     );
 
     const savedMsg = result.rows[0];
-    io.emit("receive_message", { ...savedMsg, text: msg.text, username: msg.username, user_id: user.id, avatar_url: user.avatar_url });
+    io.emit("receive_message", {
+      ...savedMsg,
+      text: msg.text,
+      username: msg.username,
+      user_id: user.id,
+      avatar_url: user.avatar_url,
+    });
   });
 
   socket.on("typing", (username) => {
@@ -224,18 +273,28 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("stop_typing");
   });
 
-  socket.on("disconnect", () => {
-    const user = Object.keys(onlineUsers).find(key => onlineUsers[key].socketId === socket.id);
-    if (user) delete onlineUsers[user];
-  });
-
   socket.on("set_user", async (username) => {
-    const result = await db.query("SELECT id, avatar_url FROM users WHERE username = $1", [username]);
+    const result = await db.query(
+      "SELECT id, avatar_url FROM users WHERE username = $1",
+      [username]
+    );
     const user = result.rows[0];
     if (user) {
-      onlineUsers[username] = { socketId: socket.id, id: user.id, avatar_url: user.avatar_url };
+      onlineUsers[username] = {
+        socketId: socket.id,
+        id: user.id,
+        avatar_url: user.avatar_url,
+      };
+      db.query("UPDATE users SET last_seen = NULL WHERE username = $1", [
+        username,
+      ]);
     }
+    io.emit("online_users", Object.keys(onlineUsers));
   });
+
+  socket.on("logout", () => removeUser(socket.id));
+
+  socket.on("disconnect", () => removeUser(socket.id));
 
   socket.on("send_direct_message", async (msg) => {
     const { sender, receiver, text, fileUrl, fileName } = msg;
@@ -246,32 +305,41 @@ io.on("connection", (socket) => {
 
       let receiverId;
       let receiverSocketId;
-      
+
       if (onlineUsers[receiver]) {
         receiverId = onlineUsers[receiver].id;
         receiverSocketId = onlineUsers[receiver].socketId;
       } else {
-        const result = await db.query("SELECT id FROM users WHERE username = $1", [receiver]);
+        const result = await db.query(
+          "SELECT id FROM users WHERE username = $1",
+          [receiver]
+        );
         receiverId = result.rows[0]?.id;
       }
 
       const encrypted = text ? encrypt(text) : null;
       const result = await db.query(
         "INSERT INTO direct_messages (sender_id, receiver_id, text, file_url, file_name) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-        [senderUser.id, receiverId, encrypted, fileUrl || null, fileName || null]
+        [
+          senderUser.id,
+          receiverId,
+          encrypted,
+          fileUrl || null,
+          fileName || null,
+        ]
       );
 
       const savedMsg = result.rows[0];
       if (receiverSocketId) {
-            console.log("emitting to receiver:", {
-            fileUrl: savedMsg.file_url,
-            fileName: savedMsg.file_name,
-            isFile: !!savedMsg.file_url,
+        console.log("emitting to receiver:", {
+          fileUrl: savedMsg.file_url,
+          fileName: savedMsg.file_name,
+          isFile: !!savedMsg.file_url,
         });
-        io.to(receiverSocketId).emit("receive_direct_message", { 
-          ...savedMsg, 
-          text, 
-          sender, 
+        io.to(receiverSocketId).emit("receive_direct_message", {
+          ...savedMsg,
+          text,
+          sender,
           receiver,
           fileUrl: savedMsg.file_url,
           fileName: savedMsg.file_name,
@@ -284,36 +352,72 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("load_direct_messages", ({ user1, user2 }) => {
-    db.query(`
-      SELECT dm.id, dm.text, dm.timestamp, dm.file_url, dm.file_name,
-             s.username as sender, r.username as receiver, s.avatar_url as sender_avatar
-      FROM direct_messages dm
-      JOIN users s ON dm.sender_id = s.id
-      JOIN users r ON dm.receiver_id = r.id
-      WHERE (s.username = $1 AND r.username = $2) OR (s.username = $2 AND r.username = $1)
-      ORDER BY dm.id ASC
-    `, [user1, user2], (err, result) => {
-      if (!err) {
-        const decrypted = result.rows.map(row => {
-          try {
-            return { 
-              ...row, 
-              text: row.text ? decrypt(row.text) : null,
-              fileUrl: row.file_url,
-              fileName: row.file_name,
-              isFile: !!row.file_url,
-            };
-          } catch (e) {
-            return { ...row, fileUrl: row.file_url, fileName: row.file_name, isFile: !!row.file_url };
-          }
-        });
-        
-        socket.emit("direct_messages_loaded", decrypted);
+  socket.on("load_direct_messages", ({ user1, user2, before_id }) => {
+    const params = [user1, user2];
+    const cursorClause = before_id ? `AND dm.id < $3` : "";
+    if (before_id) params.push(before_id);
+
+    db.query(
+      `
+    SELECT dm.id, dm.text, dm.timestamp, dm.file_url, dm.file_name, dm.is_read,
+           s.username as sender, r.username as receiver, s.avatar_url as sender_avatar
+    FROM direct_messages dm
+    JOIN users s ON dm.sender_id = s.id
+    JOIN users r ON dm.receiver_id = r.id
+    WHERE ((s.username = $1 AND r.username = $2) OR (s.username = $2 AND r.username = $1))
+    ${cursorClause}
+    ORDER BY dm.id DESC
+    LIMIT 30
+  `,
+      params,
+      (err, result) => {
+        if (!err) {
+          const decrypted = result.rows.map((row) => {
+            try {
+              return {
+                ...row,
+                text: row.text ? decrypt(row.text) : null,
+                fileUrl: row.file_url,
+                fileName: row.file_name,
+                isFile: !!row.file_url,
+              };
+            } catch (e) {
+              return {
+                ...row,
+                fileUrl: row.file_url,
+                fileName: row.file_name,
+                isFile: !!row.file_url,
+              };
+            }
+          });
+
+
+          const payload = {
+            messages: decrypted.reverse(),
+            hasMore: decrypted.length === 30,
+            before_id,
+          };
+          console.log("sending direct_messages_loaded:", payload);
+          socket.emit("direct_messages_loaded", payload);
+        }
       }
-    });
+    );
   });
 
+  socket.on("mark_as_read", async ({ reader, sender }) => { 
+    await db.query(`
+      UPDATE direct_messages 
+      SET is_read = TRUE 
+      WHERE receiver_id = (SELECT id FROM users WHERE username = $1)
+        AND sender_id = (SELECT id FROM users WHERE username = $2)
+        AND is_read = FALSE
+    `, [reader, sender]);
+
+    const senderSocket = onlineUsers[sender]?.socketId;
+    if (senderSocket) {
+      io.to(senderSocket).emit("messages_read", { by: reader, from: sender });
+    }
+  });
 });
 
 app.get("/", (req, res) => {
@@ -334,7 +438,6 @@ app.get("/users", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
-

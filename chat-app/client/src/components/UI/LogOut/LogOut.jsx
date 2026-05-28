@@ -1,8 +1,9 @@
 import React from "react";
 import classes from './LogOut.module.css';
 
-const Logout = ({ setIsLoggedIn, setToken, setUsername, className }) => {
+const Logout = ({ setIsLoggedIn, setToken, setUsername, className, socket }) => {
     const handleLogout = () => {
+        socket.emit("logout");
         localStorage.removeItem("token");
         localStorage.removeItem("username");
         setIsLoggedIn(false);
