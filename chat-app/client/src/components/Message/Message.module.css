@@ -48,13 +48,13 @@
 }
 
 .author {
-    font-size: 13px;
-    color: #b8860b;
+    font-size: 14px;
+    color: #3b3b3b;
     cursor: pointer;
     display: block;
     width: 100%;
     margin-bottom: 2px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .text {
@@ -68,14 +68,14 @@
 
 .timestamp {
     font-size: 11px;
-    color: #a09890;
+    color: #615d5a;
     flex-shrink: 0;
     line-height: 1;
     align-self: flex-end;
 }
 
 .own .timestamp {
-    color: rgba(0,0,0,0.35);
+    color: #383737;
 }
 
 .fileBubble {
@@ -124,8 +124,47 @@
     flex-shrink: 0;
 }
 
+.mediaImageWrap {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
+
+.mediaOverlay {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  padding: 2px 6px;
+}
+
+.mediaTimestamp {
+  font-size: 11px;
+  color: #fff;
+  line-height: 1;
+}
+
+.imageBubble {
+  background: none;
+  padding: 0;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  margin-top: 2px;
+}
+
 @media (max-width: 768px) {
     .message {
         max-width: 85%;
     }
+
+
 }

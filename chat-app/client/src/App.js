@@ -43,7 +43,6 @@ function App() {
     });
 
   const {
-    messages,
     directMessages,
     typingUser,
     sendDirectMessage,
@@ -116,7 +115,7 @@ function App() {
         socket={socket}
       />
       <Chat
-        messages={activeChat ? (directMessages ?? []) : []}
+        messages={directMessages ?? []}
         message={message}
         setMessage={setMessage}
         typingUser={typingUser}

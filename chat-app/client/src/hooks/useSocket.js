@@ -8,24 +8,12 @@ export function useSocket(
     useEffect(() => {
       activeChatRef.current = activeChat;
   }, [activeChat]);
-  const [messages, setMessages] = useState([]);
   const [directMessages, setDirectMessages] = useState([]);
   const [typingUser, setTypingUser] = useState("");
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
-    socket.on("load_messages", (msgs) => {
-      setMessages(msgs);
-    });
-
-    socket.on("receive_message", (msg) => {
-      setMessages((prev) => [
-        ...prev,
-        { ...msg, isOwn: msg.user_id === currentUserId },
-      ]);
-    });
-
     socket.on("receive_direct_message", (msg) => {
       setDirectMessages((prev) => [
         ...prev,
@@ -126,11 +114,6 @@ export function useSocket(
   };
 
   const updateMessageUsername = (oldName, newName) => {
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.username === oldName ? { ...m, username: newName } : m
-      )
-    );
     setDirectMessages((prev) =>
       prev.map((m) => (m.sender === oldName ? { ...m, sender: newName } : m))
     );
@@ -153,7 +136,6 @@ export function useSocket(
 
   
   return {
-    messages,
     directMessages,
     typingUser,
     sendDirectMessage,

@@ -36,9 +36,51 @@ const Message = ({
     const type = getFileType(fileName);
     if (type === "image")
       return (
-        <a href={fileUrl} download={fileName}>
-          <img src={fileUrl} alt={fileName} className={classes.mediaImage} />
-        </a>
+        <div className={classes.mediaImageWrap}>
+          <a href={fileUrl} download={fileName}>
+            <img src={fileUrl} alt={fileName} className={classes.mediaImage} />
+          </a>
+          <div className={classes.mediaOverlay}>
+            <span className={classes.mediaTimestamp}>
+              {new Date(timestamp).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+            {isOwn && (
+              <span style={{ display: "inline-flex", alignItems: "center" }}>
+                {is_read ? (
+                  <svg width="16" height="10" viewBox="0 0 16 10" fill="none">
+                    <path
+                      d="M1 5l3 3L10 1"
+                      stroke="#fff"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M5 5l3 3 6-7"
+                      stroke="#fff"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path
+                      d="M1 4l3 3 5-6"
+                      stroke="rgba(255,255,255,0.7)"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </span>
+            )}
+          </div>
+        </div>
       );
     if (type === "video")
       return <video src={fileUrl} controls className={classes.mediaVideo} />;
@@ -46,7 +88,19 @@ const Message = ({
       return <audio src={fileUrl} controls className={classes.mediaAudio} />;
     return (
       <a href={fileUrl} download={fileName} className={classes.mediaFile}>
-        📎 {fileName}
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48" />
+        </svg>
+        {fileName}
       </a>
     );
   };
@@ -68,9 +122,9 @@ const Message = ({
       )}
       <div className={classes.content}>
         <div
-          className={`${classes.bubble} ${isFile ? classes.fileBubble : ""}`}
+          className={`${classes.bubble} ${isFile ? classes.fileBubble : ""} ${isFile && getFileType(fileName) === "image" ? classes.imageBubble : ""}`}
         >
-          {!isOwn && (
+          {!isOwn && !(isFile && getFileType(fileName) === "image") && (
             <strong
               className={classes.author}
               onClick={() => onProfileClick(username)}
@@ -79,49 +133,67 @@ const Message = ({
             </strong>
           )}
           {renderContent()}
-          <span className={classes.timestamp}>
-            {new Date(timestamp).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </span>
-          {isOwn && (
-            <span
-              style={{
-                marginLeft: 3,
-                display: "inline-flex",
-                alignItems: "center",
-              }}
-            >
-              {is_read ? (
-                <svg width="16" height="10" viewBox="0 0 16 10" fill="none">
-                  <path
-                    d="M1 5l3 3L10 1"
-                    stroke="#22c55e"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M5 5l3 3 6-7"
-                    stroke="#22c55e"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              ) : (
-                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                  <path
-                    d="M1 4l3 3 5-6"
-                    stroke="#a09890"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
-            </span>
+          {!(isFile && getFileType(fileName) === "image") && (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 3,
+                  alignSelf: "flex-end",
+                }}
+              >
+                <span className={classes.timestamp}>
+                  {new Date(timestamp).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+                {isOwn && (
+                  <span
+                    style={{
+                      marginLeft: 3,
+                      display: "inline-flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    {is_read ? (
+                      <svg
+                        width="16"
+                        height="10"
+                        viewBox="0 0 16 10"
+                        fill="none"
+                      >
+                        <path
+                          d="M1 5l3 3L10 1"
+                          stroke="#05993b"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M5 5l3 3 6-7"
+                          stroke="#05993b"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    ) : (
+                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                        <path
+                          d="M1 4l3 3 5-6"
+                          stroke="#a09890"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </span>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>

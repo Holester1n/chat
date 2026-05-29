@@ -246,25 +246,6 @@ io.on("connection", (socket) => {
     socket.emit("load_messages", decrypted);
   })();
 
-  socket.on("send_message", async (msg) => {
-    const user = onlineUsers[msg.username];
-    if (!user) return;
-
-    const result = await db.query(
-      "INSERT INTO messages (user_id, text) VALUES ($1, $2) RETURNING *",
-      [user.id, encrypt(msg.text)]
-    );
-
-    const savedMsg = result.rows[0];
-    io.emit("receive_message", {
-      ...savedMsg,
-      text: msg.text,
-      username: msg.username,
-      user_id: user.id,
-      avatar_url: user.avatar_url,
-    });
-  });
-
   socket.on("typing", (username) => {
     socket.broadcast.emit("typing", username);
   });
