@@ -3,8 +3,11 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
-const onlineUsers = {};
+const rateLimit = require("express-rate-limit");
+const { Resend } = require("resend");
 const { Pool } = require("pg");
+
+const onlineUsers = {};
 
 const db = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -13,7 +16,7 @@ const db = new Pool({
   },
 });
 
-const { Resend } = require("resend");
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendVerificationEmail = async (email, code) => {
@@ -39,7 +42,10 @@ const removeUser = (socketId) => {
 };
 
 const crypto = require("crypto");
-const key = Buffer.from(process.env.ENCRYPTION_KEY, "utf8");
+const key = Buffer.from(process.env.ENCRYPTION_KEY, "hex");
+if (key.length !== 32) {
+  throw new Error(`ENCRYPTION_KEY must be 32 bytes (64 hex chars), got ${key.length}`);
+}
 
 const encrypt = (text) => {
   const iv = crypto.randomBytes(16);
@@ -58,13 +64,33 @@ const decrypt = (text) => {
   return decipher.update(encrypted, "hex", "utf8") + decipher.final("utf8");
 };
 
+const ALLOWED_ORIGINS = ["https://fluxly.me", "http://localhost:3001", "https://chat-ashen-gamma-22.vercel.app"];
+
 const app = express();
-app.use(cors());
+app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
+
+app.use("/login", rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: "Too many attempts, try again later" }
+}));
+
+app.use("/register", rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { error: "Too many registrations, try again later" }
+}));
+
+app.use("/forgot-password", rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: "Too many attempts, try again later" }
+}));
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "*" },
+  cors: { origin: ALLOWED_ORIGINS }
 });
 
 const bcrypt = require("bcrypt");
@@ -85,7 +111,7 @@ app.post("/register", async (req, res) => {
       console.error("Mail error:", mailErr);
       return res
         .status(500)
-        .json({ error: "Failed to send email: " + mailErr.message });
+        .json({ error: "Failed to send email: " });
     }
     res.json({ success: true });
   } catch (err) {
@@ -111,6 +137,17 @@ app.post("/verify", async (req, res) => {
 const jwt = require("jsonwebtoken");
 const SECRET = process.env.JWT_SECRET;
 
+const authMiddleware = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
+  try {
+    req.user = jwt.verify(token, SECRET);
+    next();
+  } catch {
+    res.status(401).json({ error: "Invalid token" });
+  }
+};
+
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   const result = await db.query("SELECT * FROM users WHERE email = $1", [
@@ -125,7 +162,7 @@ app.post("/login", async (req, res) => {
   const match = await bcrypt.compare(password, row.password);
   if (!match) return res.status(400).json({ error: "Wrong password" });
 
-  const token = jwt.sign({ username: row.username }, SECRET);
+  const token = jwt.sign({ username: row.username }, SECRET, { expiresIn: "7d" })
   res.json({ token, username: row.username, id: row.id });
 });
 
@@ -139,10 +176,14 @@ app.get("/users/:username", async (req, res) => {
   res.json(result.rows[0]);
 });
 
-app.patch("/users/:username", async (req, res) => {
+app.patch("/users/:username", authMiddleware, async (req, res) => {
   const { username } = req.params;
-  const { bio, avatar_url, newUsername } = req.body;
 
+  if (req.user.username !== username) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  const { bio, avatar_url, newUsername } = req.body;
   try {
     await db.query(
       "UPDATE users SET username = COALESCE($1, username), bio = $2, avatar_url = $3 WHERE username = $4",
@@ -150,7 +191,7 @@ app.patch("/users/:username", async (req, res) => {
     );
     res.json({ success: true });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: "Failed to update profile" });
   }
 });
 
@@ -207,7 +248,7 @@ app.post("/forgot-password", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error("Resend error:", err);
-    res.status(500).json({ error: "Failed to send email" + err.message });
+    res.status(500).json({ error: "Failed to send email" });
   }
 });
 
@@ -225,6 +266,17 @@ app.post("/reset-password", async (req, res) => {
     [hashed, email]
   );
   res.json({ success: true });
+});
+
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) return next(new Error("Unauthorized"));
+  try {
+    socket.user = jwt.verify(token, SECRET);
+    next();
+  } catch {
+    next(new Error("Invalid token"));
+  }
 });
 
 io.on("connection", (socket) => {
@@ -254,7 +306,8 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("stop_typing");
   });
 
-  socket.on("set_user", async (username) => {
+  socket.on("set_user", async () => {
+    const username = socket.user.username;
     const result = await db.query(
       "SELECT id, avatar_url FROM users WHERE username = $1",
       [username]
@@ -278,9 +331,8 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => removeUser(socket.id));
 
   socket.on("send_direct_message", async (msg) => {
-    const { sender, receiver, text, fileUrl, fileName } = msg;
-    console.log("onlineUsers:", Object.keys(onlineUsers));
-    console.log("receiver:", receiver, "found:", !!onlineUsers[receiver]);
+    const { receiver, text, fileUrl, fileName } = msg;
+    const sender = socket.user.username;
     try {
       const senderUser = onlineUsers[sender];
 
@@ -312,11 +364,6 @@ io.on("connection", (socket) => {
 
       const savedMsg = result.rows[0];
       if (receiverSocketId) {
-        console.log("emitting to receiver:", {
-          fileUrl: savedMsg.file_url,
-          fileName: savedMsg.file_name,
-          isFile: !!savedMsg.file_url,
-        });
         io.to(receiverSocketId).emit("receive_direct_message", {
           ...savedMsg,
           text,
@@ -333,7 +380,8 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("load_direct_messages", ({ user1, user2, before_id }) => {
+  socket.on("load_direct_messages", ({ user2, before_id }) => {
+    const user1 = socket.user.username;
     const params = [user1, user2];
     const cursorClause = before_id ? `AND dm.id < $3` : "";
     if (before_id) params.push(before_id);
@@ -378,14 +426,14 @@ io.on("connection", (socket) => {
             hasMore: decrypted.length === 30,
             before_id,
           };
-          console.log("sending direct_messages_loaded:", payload);
           socket.emit("direct_messages_loaded", payload);
         }
       }
     );
   });
 
-  socket.on("mark_as_read", async ({ reader, sender }) => { 
+  socket.on("mark_as_read", async ({ sender }) => { 
+    const reader = socket.user.username;
     await db.query(`
       UPDATE direct_messages 
       SET is_read = TRUE 

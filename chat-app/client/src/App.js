@@ -11,7 +11,11 @@ import { useFileTransfer } from "./hooks/useFileTransfer";
 import "./App.css";
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:3000";
-const socket = io(SERVER_URL);
+const socket = io(SERVER_URL, {
+  auth: {
+    token: localStorage.getItem("token")
+  }
+});
 
 function App() {
   const [message, setMessage] = useState("");

@@ -45,9 +45,13 @@ const ProfileModal = ({ username, currentUser, onClose, onStartChat, onUsernameC
   };
 
   const handleSave = async () => {
+    const token = localStorage.getItem("token");
     await fetch(`${SERVER_URL}/users/${currentUser}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
       body: JSON.stringify({ bio, avatar_url: avatarUrl, newUsername })
     });
     setProfile(prev => ({ ...prev, bio, avatar_url: avatarUrl, username: newUsername }));
