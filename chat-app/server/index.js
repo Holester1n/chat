@@ -96,10 +96,21 @@ const io = new Server(server, {
 const bcrypt = require("bcrypt");
 
 app.post("/register", async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, captchaToken } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-
+  const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        secret: process.env.TURNSTILE_SECRET_KEY,
+        response: captchaToken
+    })
+  });
+  const verifyData = await verifyRes.json();
+  if (!verifyData.success) {
+      return res.status(400).json({ error: 'Капча не пройдена' });
+  }
   try {
     await db.query(
       "INSERT INTO users (username, email, password, verification_code, verified) VALUES ($1, $2, $3, $4, FALSE)",

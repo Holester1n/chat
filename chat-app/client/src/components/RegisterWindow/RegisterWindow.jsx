@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import classes from './RegisterWindow.module.css';
 import Button from '../UI/button/Button';
 import Input from '../UI/input/Input';
 import { SERVER_URL } from "../../config";
+import { Turnstile } from '@marsidev/react-turnstile';
 
 const RegisterWindow = ({ username, setUsername, password, setPassword, isRegister, setIsRegister, setIsLoggedIn, setToken, confirmPassword, setConfirmPassword, setCurrentUserId }) => {
     const [email, setEmail] = useState("");
@@ -15,18 +16,30 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
     const [resetStep, setResetStep] = useState(1);
     const [error, setError] = useState("");
     const [successMsg, setSuccessMsg] = useState("");
+    const [captchaToken, setCaptchaToken] = useState("");
+    const turnstileRef = useRef(null);
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (tokenOverride) => {
         setError("");
+        const token = tokenOverride || captchaToken;
+
         if (isRegister) {
+            if (!token) {
+                setTimeout(() => turnstileRef.current?.execute(), 100);
+                return;
+            }
             if (password.trim() !== confirmPassword.trim()) return alert("Passwords do not match");
             const res = await fetch(`${SERVER_URL}/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: username.trim(), email: email.trim(), password: password.trim() })
+                body: JSON.stringify({ username: username.trim(), email: email.trim(), password: password.trim(), captchaToken: token })
             });
             const data = await res.json();
-            if (data.error) return setError(data.error);
+            if (data.error) {
+                turnstileRef.current?.reset();
+                setCaptchaToken("");
+                return setError(data.error);
+            }
             setVerifying(true);
         } else {
             const res = await fetch(`${SERVER_URL}/login`, {
@@ -200,7 +213,22 @@ const RegisterWindow = ({ username, setUsername, password, setPassword, isRegist
             )}
             {error && <p className={classes.error}>{error}</p>}
             {successMsg && <p className={classes.success}>{successMsg}</p>}
-            <Button className={classes.button} onClick={handleSubmit}>
+                <Turnstile
+                    ref={turnstileRef}
+                    siteKey="0x4AAAAAADdsvWHak43m98BR"
+                    options={{ 
+                        size: 'invisible', 
+                        execution: 'execute'
+                    }}
+                    execution="execute"
+                    onSuccess={token => {
+                        setCaptchaToken(token);
+                        handleSubmit(token);
+                    }}
+                    onError={() => setCaptchaToken("")}
+                    onExpire={() => { setCaptchaToken(""); turnstileRef.current?.execute(); }}
+                />
+            <Button className={classes.button} onClick={() => handleSubmit()}>
                 {isRegister ? "Register" : "Login"}
             </Button>
             <p className={classes.switch} onClick={() => setForgotPassword(true)}>Forgot password?</p>
