@@ -291,6 +291,26 @@ io.use((socket, next) => {
 });
 
 io.on("connection", (socket) => {
+  socket.onAny(async (event) => {
+    const username = socket.user?.username;
+    if (!username || onlineUsers[username]) return;
+
+    const result = await db.query(
+      "SELECT id, avatar_url FROM users WHERE username = $1",
+      [username]
+    );
+    const user = result.rows[0];
+    if (user) {
+      onlineUsers[username] = {
+        socketId: socket.id,
+        id: user.id,
+        avatar_url: user.avatar_url,
+      };
+      db.query("UPDATE users SET last_seen = NULL WHERE username = $1", [username]);
+      io.emit("online_users", Object.keys(onlineUsers));
+    }
+  });
+  
   (async () => {
     const result = await db.query(`
       SELECT m.id, m.text, m.timestamp, u.username, u.avatar_url
@@ -345,7 +365,17 @@ io.on("connection", (socket) => {
     const { receiver, text, fileUrl, fileName } = msg;
     const sender = socket.user.username;
     try {
-      const senderUser = onlineUsers[sender];
+      let senderId = onlineUsers[sender]?.id;
+      let senderAvatarUrl = onlineUsers[sender]?.avatar_url;
+
+      if (!senderId) {
+        const senderResult = await db.query(
+          "SELECT id, avatar_url FROM users WHERE username = $1",
+          [sender]
+        );
+        senderId = senderResult.rows[0]?.id;
+        senderAvatarUrl = senderResult.rows[0]?.avatar_url;
+      }
 
       let receiverId;
       let receiverSocketId;
@@ -385,6 +415,15 @@ io.on("connection", (socket) => {
           isFile: !!savedMsg.file_url,
           sender_avatar: onlineUsers[sender]?.avatar_url,
         });
+      }
+
+      if (!onlineUsers[sender]) {
+        onlineUsers[sender] = {
+          socketId: socket.id,
+          id: senderId,
+          avatar_url: senderAvatarUrl,
+        };
+        io.emit("online_users", Object.keys(onlineUsers));
       }
     } catch (err) {
       console.error("Error saving direct message:", err);

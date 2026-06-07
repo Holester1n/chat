@@ -1,242 +1,296 @@
 import React, { useState, useRef } from "react";
-import classes from './RegisterWindow.module.css';
-import Button from '../UI/button/Button';
-import Input from '../UI/input/Input';
+import classes from "./RegisterWindow.module.css";
+import Button from "../UI/button/Button";
+import Input from "../UI/input/Input";
 import { SERVER_URL } from "../../config";
-import { Turnstile } from '@marsidev/react-turnstile';
+import { Turnstile } from "@marsidev/react-turnstile";
 
-const RegisterWindow = ({ username, setUsername, password, setPassword, isRegister, setIsRegister, setIsLoggedIn, setToken, confirmPassword, setConfirmPassword, setCurrentUserId }) => {
-    const [email, setEmail] = useState("");
-    const [verifying, setVerifying] = useState(false);
-    const [code, setCode] = useState("");
-    const [forgotPassword, setForgotPassword] = useState(false);
-    const [resetEmail, setResetEmail] = useState("");
-    const [resetCode, setResetCode] = useState("");
-    const [newPassword, setNewPassword] = useState("");
-    const [resetStep, setResetStep] = useState(1);
-    const [error, setError] = useState("");
-    const [successMsg, setSuccessMsg] = useState("");
-    const [captchaToken, setCaptchaToken] = useState("");
-    const turnstileRef = useRef(null);
+const RegisterWindow = ({
+  username,
+  setUsername,
+  password,
+  setPassword,
+  isRegister,
+  setIsRegister,
+  setIsLoggedIn,
+  setToken,
+  confirmPassword,
+  setConfirmPassword,
+  setCurrentUserId,
+  socket,
+}) => {
+  const [email, setEmail] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [code, setCode] = useState("");
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [resetStep, setResetStep] = useState(1);
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
+  const turnstileRef = useRef(null);
 
-    const handleSubmit = async (tokenOverride) => {
-        setError("");
-        const token = tokenOverride || captchaToken;
+  const handleSubmit = async (tokenOverride) => {
+    setError("");
+    const token = tokenOverride || captchaToken;
 
-        if (isRegister) {
-            if (!token) {
-                setTimeout(() => turnstileRef.current?.execute(), 100);
-                return;
-            }
-            if (password.trim() !== confirmPassword.trim()) return alert("Passwords do not match");
-            const res = await fetch(`${SERVER_URL}/register`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: username.trim(), email: email.trim(), password: password.trim(), captchaToken: token })
-            });
-            const data = await res.json();
-            if (data.error) {
-                turnstileRef.current?.reset();
-                setCaptchaToken("");
-                return setError(data.error);
-            }
-            setVerifying(true);
-        } else {
-            const res = await fetch(`${SERVER_URL}/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: email.trim(), password: password.trim() })
+    if (isRegister) {
+      if (!token) {
+        setTimeout(() => turnstileRef.current?.execute(), 100);
+        return;
+      }
+      if (password.trim() !== confirmPassword.trim())
+        return alert("Passwords do not match");
+      const res = await fetch(`${SERVER_URL}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: username.trim(),
+          email: email.trim(),
+          password: password.trim(),
+          captchaToken: token,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        turnstileRef.current?.reset();
+        setCaptchaToken("");
+        return setError(data.error);
+      }
+      setVerifying(true);
+    } else {
+      const res = await fetch(`${SERVER_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.error) return setError(data.error);
+      setToken(data.token);
+      localStorage.setItem("token", data.token);
+      setUsername(data.username);
+      localStorage.setItem("username", data.username);
+      localStorage.setItem("userId", data.id);
+      setCurrentUserId(data.id);
+      setIsLoggedIn(true);
+
+      socket.auth.token = data.token;
+      socket.connect();
+    }
+  };
+
+  const handleVerify = async () => {
+    const res = await fetch(`${SERVER_URL}/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim(), code: code.trim() }),
+    });
+    const data = await res.json();
+    if (data.error) return setError(data.error);
+    setSuccessMsg("Email подтверждён! Теперь войдите.");
+    setVerifying(false);
+    setIsRegister(false);
+  };
+
+  if (verifying) {
+    return (
+      <div className={classes.container}>
+        <h2 style={{ marginBottom: 20 }}>Подтверждение email</h2>
+
+        <p className={classes.verifyMessage}>Код отправлен на {email}</p>
+        <div className={classes.input}>
+          <Input
+            placeholder="Введите код"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            className={classes.Input}
+          />
+        </div>
+        {error && <p className={classes.error}>{error}</p>}
+        {successMsg && <p className={classes.success}>{successMsg}</p>}
+        <Button className={classes.button} onClick={handleVerify}>
+          Подтвердить
+        </Button>
+      </div>
+    );
+  }
+
+  if (forgotPassword && resetStep === 1) {
+    return (
+      <div className={classes.container}>
+        <h2 style={{ marginBottom: 20 }}>Сброс пароля</h2>
+
+        <p className={classes.verifyMessage}>
+          Введите email для получения кода
+        </p>
+        <div className={classes.input}>
+          <Input
+            placeholder="Email"
+            type="email"
+            value={resetEmail}
+            onChange={(e) => setResetEmail(e.target.value)}
+            className={classes.Input}
+          />
+        </div>
+        {error && <p className={classes.error}>{error}</p>}
+        {successMsg && <p className={classes.success}>{successMsg}</p>}
+        <Button
+          className={classes.button}
+          onClick={async () => {
+            const res = await fetch(`${SERVER_URL}/forgot-password`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: resetEmail.trim() }),
             });
             const data = await res.json();
             if (data.error) return setError(data.error);
-            setToken(data.token);
-            localStorage.setItem("token", data.token);
-            setUsername(data.username);
-            localStorage.setItem("username", data.username);
-            localStorage.setItem("userId", data.id);
-            setCurrentUserId(data.id);
-            setIsLoggedIn(true);
-        }
-    };
+            setResetStep(2);
+          }}
+        >
+          Отправить код
+        </Button>
+        <p className={classes.switch} onClick={() => setForgotPassword(false)}>
+          Назад
+        </p>
+      </div>
+    );
+  }
 
-    const handleVerify = async () => {
-        const res = await fetch(`${SERVER_URL}/verify`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: email.trim(), code: code.trim() })
-        });
-        const data = await res.json();
-        if (data.error) return setError(data.error);
-        setSuccessMsg("Email подтверждён! Теперь войдите.");
-        setVerifying(false);
-        setIsRegister(false);
-    };
-
-    if (verifying) {
-        return (
-            <div className={classes.container}>
-                <h2 style={{marginBottom: 20}}>Подтверждение email</h2>
-
-                <p className={classes.verifyMessage}>Код отправлен на {email}</p>
-                <div className={classes.input}>
-                    <Input
-                        placeholder="Введите код"
-                        value={code}
-                        onChange={e => setCode(e.target.value)}
-                        className={classes.Input}
-                    />
-                </div>
-                {error && <p className={classes.error}>{error}</p>}
-                {successMsg && <p className={classes.success}>{successMsg}</p>}
-                <Button className={classes.button} onClick={handleVerify}>Подтвердить</Button>
-            </div>
-        );
-    }
-
-    if (forgotPassword && resetStep === 1) {
-        return (
-            <div className={classes.container}>
-                <h2 style={{marginBottom: 20}}>Сброс пароля</h2>
-
-                <p className={classes.verifyMessage}>Введите email для получения кода</p>
-                <div className={classes.input}>
-                    <Input
-                        placeholder="Email"
-                        type="email"
-                        value={resetEmail}
-                        onChange={e => setResetEmail(e.target.value)}
-                        className={classes.Input}
-                    />
-                </div>
-                {error && <p className={classes.error}>{error}</p>}
-                {successMsg && <p className={classes.success}>{successMsg}</p>}
-                <Button className={classes.button} onClick={async () => {
-                    const res = await fetch(`${SERVER_URL}/forgot-password`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ email: resetEmail.trim() })
-                    });
-                    const data = await res.json();
-                    if (data.error) return setError(data.error);
-                    setResetStep(2);
-                }}>Отправить код</Button>
-                <p className={classes.switch} onClick={() => setForgotPassword(false)}>Назад</p>
-            </div>
-        );
-    }
-
-    if (forgotPassword && resetStep === 2) {
-        return (
-            <div className={classes.container}>
-                <h2>Новый пароль</h2>
-
-                <p className={classes.verifyMessage}>Код отправлен на {resetEmail}</p>
-                <div className={classes.input}>
-                    <Input
-                        placeholder="Код из письма"
-                        value={resetCode}
-                        onChange={e => setResetCode(e.target.value)}
-                        className={classes.Input}
-                    />
-                </div>
-                <div className={classes.input}>
-                    <Input
-                        placeholder="Новый пароль"
-                        type="password"
-                        value={newPassword}
-                        onChange={e => setNewPassword(e.target.value)}
-                        className={classes.Input}
-                    />
-                </div>
-                {error && <p className={classes.error}>{error}</p>}
-                {successMsg && <p className={classes.success}>{successMsg}</p>}
-                <Button className={classes.button} onClick={async () => {
-                    const res = await fetch(`${SERVER_URL}/reset-password`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ email: resetEmail.trim(), code: resetCode.trim(), newPassword: newPassword.trim() })
-                    });
-                    const data = await res.json();
-                    if (data.error) return setError(data.error);
-                    alert("Пароль изменён! Войдите с новым паролем.");
-                    setForgotPassword(false);
-                    setResetStep(1);
-                }}>Сохранить</Button>
-                <p className={classes.switch} onClick={() => setResetStep(1)}>Назад</p>
-            </div>
-        );
-    }
-
+  if (forgotPassword && resetStep === 2) {
     return (
-        <div className={classes.container}>
-            <h2>{isRegister ? "Register" : "Login"}</h2>
+      <div className={classes.container}>
+        <h2>Новый пароль</h2>
 
-            {isRegister && (
-                <div className={classes.input}>
-                    <Input
-                        placeholder="Username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className={classes.Input}
-                    />
-                </div>
-            )}
-            <div className={classes.input}>
-                <Input
-                    placeholder="Email"
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className={classes.Input}
-                />
-            </div>
-            <div className={classes.input}>
-                <Input
-                    placeholder="Password"
-                    type="password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className={classes.Input}
-                    onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
-                />
-            </div>
-            {isRegister && (
-                <div className={classes.input}>
-                    <Input
-                        placeholder="Confirm password"
-                        type="password"
-                        value={confirmPassword}
-                        onChange={e => setConfirmPassword(e.target.value)}
-                        className={classes.Input}
-                    />
-                </div>
-            )}
-            {error && <p className={classes.error}>{error}</p>}
-            {successMsg && <p className={classes.success}>{successMsg}</p>}
-                <Turnstile
-                    ref={turnstileRef}
-                    siteKey="0x4AAAAAADdsvWHak43m98BR"
-                    options={{ 
-                        size: 'invisible', 
-                        execution: 'execute'
-                    }}
-                    execution="execute"
-                    onSuccess={token => {
-                        setCaptchaToken(token);
-                        handleSubmit(token);
-                    }}
-                    onError={() => setCaptchaToken("")}
-                    onExpire={() => { setCaptchaToken(""); turnstileRef.current?.execute(); }}
-                />
-            <Button className={classes.button} onClick={() => handleSubmit()}>
-                {isRegister ? "Register" : "Login"}
-            </Button>
-            <p className={classes.switch} onClick={() => setForgotPassword(true)}>Forgot password?</p>
-            <p onClick={() => setIsRegister(!isRegister)} className={classes.switch}>
-                {isRegister ? "Already have an account? Login" : "No account? Sign up"}
-            </p>
+        <p className={classes.verifyMessage}>Код отправлен на {resetEmail}</p>
+        <div className={classes.input}>
+          <Input
+            placeholder="Код из письма"
+            value={resetCode}
+            onChange={(e) => setResetCode(e.target.value)}
+            className={classes.Input}
+          />
         </div>
-    )
-}
+        <div className={classes.input}>
+          <Input
+            placeholder="Новый пароль"
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            className={classes.Input}
+          />
+        </div>
+        {error && <p className={classes.error}>{error}</p>}
+        {successMsg && <p className={classes.success}>{successMsg}</p>}
+        <Button
+          className={classes.button}
+          onClick={async () => {
+            const res = await fetch(`${SERVER_URL}/reset-password`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: resetEmail.trim(),
+                code: resetCode.trim(),
+                newPassword: newPassword.trim(),
+              }),
+            });
+            const data = await res.json();
+            if (data.error) return setError(data.error);
+            alert("Пароль изменён! Войдите с новым паролем.");
+            setForgotPassword(false);
+            setResetStep(1);
+          }}
+        >
+          Сохранить
+        </Button>
+        <p className={classes.switch} onClick={() => setResetStep(1)}>
+          Назад
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={classes.container}>
+      <h2>{isRegister ? "Register" : "Login"}</h2>
+
+      {isRegister && (
+        <div className={classes.input}>
+          <Input
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className={classes.Input}
+          />
+        </div>
+      )}
+      <div className={classes.input}>
+        <Input
+          placeholder="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className={classes.Input}
+        />
+      </div>
+      <div className={classes.input}>
+        <Input
+          placeholder="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className={classes.Input}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSubmit();
+          }}
+        />
+      </div>
+      {isRegister && (
+        <div className={classes.input}>
+          <Input
+            placeholder="Confirm password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className={classes.Input}
+          />
+        </div>
+      )}
+      {error && <p className={classes.error}>{error}</p>}
+      {successMsg && <p className={classes.success}>{successMsg}</p>}
+      <Turnstile
+        ref={turnstileRef}
+        siteKey="0x4AAAAAADdsvWHak43m98BR"
+        options={{
+          size: "invisible",
+          execution: "execute",
+        }}
+        execution="execute"
+        onSuccess={(token) => {
+          setCaptchaToken(token);
+          handleSubmit(token);
+        }}
+        onError={() => setCaptchaToken("")}
+        onExpire={() => {
+          setCaptchaToken("");
+          turnstileRef.current?.execute();
+        }}
+      />
+      <Button className={classes.button} onClick={() => handleSubmit()}>
+        {isRegister ? "Register" : "Login"}
+      </Button>
+      <p className={classes.switch} onClick={() => setForgotPassword(true)}>
+        Forgot password?
+      </p>
+      <p onClick={() => setIsRegister(!isRegister)} className={classes.switch}>
+        {isRegister ? "Already have an account? Login" : "No account? Sign up"}
+      </p>
+    </div>
+  );
+};
 
 export default RegisterWindow;

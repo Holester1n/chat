@@ -14,7 +14,16 @@ const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:3000";
 const socket = io(SERVER_URL, {
   auth: {
     token: localStorage.getItem("token")
-  }
+  },
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  autoConnect: false,
+});
+
+socket.on("reconnect_attempt", () => {
+  socket.auth.token = localStorage.getItem("token");
 });
 
 function App() {
@@ -32,7 +41,6 @@ function App() {
     setConfirmPassword,
     isLoggedIn,
     setIsLoggedIn,
-    token,
     setToken,
     isRegister,
     setIsRegister,
@@ -62,7 +70,7 @@ function App() {
     onNewDirectMessage: addUserIfMissing,
   });
 
-  const { sendFile, transferProgress, isTransferring } = useFileTransfer(
+  const { sendFile } = useFileTransfer(
     socket,
     {
       username,
@@ -95,6 +103,7 @@ function App() {
         confirmPassword={confirmPassword}
         setConfirmPassword={setConfirmPassword}
         setCurrentUserId={setCurrentUserId}
+        socket={socket}
       />
     );
   }
