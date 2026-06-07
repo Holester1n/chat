@@ -26,6 +26,10 @@ socket.on("reconnect_attempt", () => {
   socket.auth.token = localStorage.getItem("token");
 });
 
+if (localStorage.getItem("token")) {
+  socket.connect();
+}
+
 function App() {
   const [message, setMessage] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
