@@ -391,11 +391,16 @@ io.on("connection", (socket) => {
         receiverId = result.rows[0]?.id;
       }
 
+      if (!senderId || !receiverId) {
+        console.error("Sender or receiver not found");
+        return;
+      }
+
       const encrypted = text ? encrypt(text) : null;
       const result = await db.query(
         "INSERT INTO direct_messages (sender_id, receiver_id, text, file_url, file_name) VALUES ($1, $2, $3, $4, $5) RETURNING *",
         [
-          senderUser.id,
+          senderId,
           receiverId,
           encrypted,
           fileUrl || null,
@@ -413,7 +418,7 @@ io.on("connection", (socket) => {
           fileUrl: savedMsg.file_url,
           fileName: savedMsg.file_name,
           isFile: !!savedMsg.file_url,
-          sender_avatar: onlineUsers[sender]?.avatar_url,
+          sender_avatar: senderAvatarUrl,
         });
       }
 
