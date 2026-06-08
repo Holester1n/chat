@@ -59,7 +59,14 @@ const Chat = ({
     setMessage("");
     inputRef.current?.focus();
   };
-  const handleSend = onSendMessage || sendMessage;
+  const handleSend = () => {
+    if (onSendMessage) {
+      onSendMessage();
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    } else {
+      sendMessage();
+    }
+  };
 
   const formatLastSeen = (isoString) => {
     if (!isoString) return "не в сети";
