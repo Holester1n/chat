@@ -149,6 +149,7 @@ function App() {
         hasMore={hasMore}
         loadingMore={loadingMore}
         loadMore={loadMore}
+        sendDirectMessage={sendDirectMessage}
       />
       {profileUser && (
         <ProfileModal

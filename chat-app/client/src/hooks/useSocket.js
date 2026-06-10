@@ -70,7 +70,7 @@ export function useSocket(
     };
 
     const handleLoaded = ({ messages: loadedMessages, hasMore, before_id }) => {
-      console.log("handleLoaded received:", { loadedMessages, hasMore, before_id });
+      console.log("handleLoaded fired", loadedMessages);
       const safeMessages = Array.isArray(loadedMessages) ? loadedMessages : [];
       if (before_id) {
         setDirectMessages((prev) => [...safeMessages, ...(Array.isArray(prev) ? prev : [])]);
@@ -85,7 +85,7 @@ export function useSocket(
     return () => {
       socket.off("direct_messages_loaded", handleLoaded);
       socket.off("messages_read", handleRead);
-    }
+    };
   }, [activeChat]);
 
   const loadMore = () => {
@@ -99,7 +99,7 @@ export function useSocket(
     });
   };
 
-  const sendDirectMessage = ({ message, receiver }) => {
+  const sendDirectMessage = ({ message, receiver, reply_to, reply_quote, reply_author }) => {
     if (!message) return;
 
     const msg = {
@@ -107,6 +107,9 @@ export function useSocket(
       receiver,
       text: message,
       timestamp: new Date().toISOString(),
+      reply_to: reply_to ?? null,
+      reply_quote: reply_quote ?? null,
+      reply_author: reply_author ?? null,
     };
 
     socket.emit("send_direct_message", msg);

@@ -24,6 +24,11 @@ const Message = ({
   fileName,
   fileUrl,
   is_read,
+  msgId,
+  replyQuote,
+  replyAuthor,
+  onTouchStart,
+  onTouchEnd,
 }) => {
   const isOwn =
     username === currentUser ||
@@ -108,6 +113,10 @@ const Message = ({
   return (
     <div
       className={`${classes.message} ${isOwn ? classes.own : classes.other}`}
+      data-msg-id={msgId}
+      data-msg-author={username}
+      onTouchStart={onTouchStart}
+      onTouchEnd={(e) => onTouchEnd?.(e, msgId, text, username)}
     >
       {!isOwn && (
         <img
@@ -121,6 +130,15 @@ const Message = ({
         />
       )}
       <div className={classes.content}>
+        {replyQuote && (
+          <div className={classes.replyQuote}>
+            <span className={classes.replyQuoteLine} />
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <span className={classes.replyQuoteAuthor}>{replyAuthor}</span>
+              <span className={classes.replyQuoteText}>{replyQuote}</span>
+            </div>
+          </div>
+        )}
         <div
           className={`${classes.bubble} ${isFile ? classes.fileBubble : ""} ${isFile && getFileType(fileName) === "image" ? classes.imageBubble : ""}`}
         >

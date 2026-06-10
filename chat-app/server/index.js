@@ -362,7 +362,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => removeUser(socket.id));
 
   socket.on("send_direct_message", async (msg) => {
-    const { receiver, text, fileUrl, fileName } = msg;
+    const { receiver, text, fileUrl, fileName, reply_to_id, reply_quote, reply_author } = msg;
     const sender = socket.user.username;
     try {
       let senderId = onlineUsers[sender]?.id;
@@ -398,16 +398,13 @@ io.on("connection", (socket) => {
 
       const encrypted = text ? encrypt(text) : null;
       const result = await db.query(
-        "INSERT INTO direct_messages (sender_id, receiver_id, text, file_url, file_name) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-        [
-          senderId,
-          receiverId,
-          encrypted,
-          fileUrl || null,
-          fileName || null,
-        ]
+        `INSERT INTO direct_messages 
+          (sender_id, receiver_id, text, file_url, file_name, reply_to_id, reply_quote, reply_author)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING *`,
+        [senderId, receiverId, encrypted, fileUrl || null, fileName || null,
+        reply_to_id || null, reply_quote || null, reply_author || null]
       );
-
       const savedMsg = result.rows[0];
       if (receiverSocketId) {
         io.to(receiverSocketId).emit("receive_direct_message", {
@@ -419,6 +416,9 @@ io.on("connection", (socket) => {
           fileName: savedMsg.file_name,
           isFile: !!savedMsg.file_url,
           sender_avatar: senderAvatarUrl,
+          reply_to_id: savedMsg.reply_to_id,
+          reply_quote: savedMsg.reply_quote,
+          reply_author: savedMsg.reply_author,
         });
       }
 
@@ -444,7 +444,8 @@ io.on("connection", (socket) => {
     db.query(
       `
     SELECT dm.id, dm.text, dm.timestamp, dm.file_url, dm.file_name, dm.is_read,
-           s.username as sender, r.username as receiver, s.avatar_url as sender_avatar
+       dm.reply_to_id, dm.reply_quote, dm.reply_author,
+       s.username as sender, r.username as receiver, s.avatar_url as sender_avatar
     FROM direct_messages dm
     JOIN users s ON dm.sender_id = s.id
     JOIN users r ON dm.receiver_id = r.id
@@ -455,37 +456,42 @@ io.on("connection", (socket) => {
   `,
       params,
       (err, result) => {
-        if (!err) {
-          const decrypted = result.rows.map((row) => {
-            try {
-              return {
-                ...row,
-                text: row.text ? decrypt(row.text) : null,
-                fileUrl: row.file_url,
-                fileName: row.file_name,
-                isFile: !!row.file_url,
-              };
-            } catch (e) {
-              return {
-                ...row,
-                fileUrl: row.file_url,
-                fileName: row.file_name,
-                isFile: !!row.file_url,
-              };
-            }
-          });
-
-
-          const payload = {
-            messages: decrypted.reverse(),
-            hasMore: decrypted.length === 30,
-            before_id,
-          };
-          socket.emit("direct_messages_loaded", payload);
+        if (err) {
+          console.error("load_direct_messages error:", err);
+          return;
         }
+        
+        const decrypted = result.rows.map((row) => {
+          try {
+            return {
+              ...row,
+              text: row.text ? decrypt(row.text) : null,
+              fileUrl: row.file_url,
+              fileName: row.file_name,
+              isFile: !!row.file_url,
+            };
+          } catch (e) {
+            return {
+              ...row,
+              fileUrl: row.file_url,
+              fileName: row.file_name,
+              isFile: !!row.file_url,
+            };
+          }
+        });
+
+        const payload = {
+          messages: decrypted.reverse(),
+          hasMore: decrypted.length === 30,
+          before_id,
+        };
+        
+        console.log("emitting direct_messages_loaded", payload);
+        socket.emit("direct_messages_loaded", payload);
       }
     );
   });
+
 
   socket.on("mark_as_read", async ({ sender }) => { 
     const reader = socket.user.username;
@@ -503,7 +509,6 @@ io.on("connection", (socket) => {
     }
   });
 });
-
 app.get("/", (req, res) => {
   res.send("Server is running");
 });

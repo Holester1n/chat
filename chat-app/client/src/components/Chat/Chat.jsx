@@ -5,6 +5,8 @@ import Button from "../UI/button/Button";
 import Input from "../UI/input/Input";
 import IconButton from "../UI/IconButton/IconButton";
 import { useEffect, useRef, useState } from "react";
+import { useSwipeReply } from '../../hooks/useSwipeReply';
+import { useTextSelection } from '../../hooks/useTextSelection';
 
 const Chat = ({
   messages,
@@ -24,14 +26,22 @@ const Chat = ({
   hasMore,
   loadingMore,
   loadMore,
+  sendDirectMessage
 }) => {
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
-  const [, forceUpdate] = useState(0);
+  const [tick, setTick] = useState(0);
   const topSentinelRef = useRef(null);
+  const [replyTo, setReplyTo] = useState(null);
+  const { selection, clear: clearSelection } = useTextSelection(scrollContainerRef);
+  
+  const { onTouchStart, onTouchEnd } = useSwipeReply((messageId, messageText, messageAuthor) => {
+    setReplyTo({ messageId, text: messageText, author: messageAuthor });
+  });
+  const cancelReply = () => setReplyTo(null);
 
   const scrollToBottom = () => {
     const el = scrollContainerRef.current;
@@ -46,26 +56,21 @@ const Chat = ({
     setShowScrollBtn(!isNearBottom);
   };
 
-  const sendMessage = () => {
-    if (!message) return;
-
-    const msg = {
-      text: message,
-      id: Date.now(),
-      username: username,
-      timestamp: new Date().toISOString(),
-    };
-    socket.emit("send_message", msg);
-    setMessage("");
-    inputRef.current?.focus();
-  };
   const handleSend = () => {
-    if (onSendMessage) {
-      onSendMessage();
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-    } else {
-      sendMessage();
-    }
+    if (!message.trim()) return;
+
+    sendDirectMessage({
+      message,
+      receiver: activeChat,
+      reply_to_id: replyTo?.messageId ?? null,
+      reply_quote: replyTo?.text ?? null,
+      reply_author: replyTo?.author ?? null,
+    });
+
+    setMessage("");
+    setReplyTo(null);
+    clearSelection();
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   };
 
   const formatLastSeen = (isoString) => {
@@ -113,11 +118,39 @@ const Chat = ({
   }, [hasMore, loadingMore]);
 
   useEffect(() => {
-    const interval = setInterval(() => forceUpdate((n) => n + 1), 60_000);
+    const interval = setInterval(() => setTick((n) => n + 1), 60_000);
     return () => clearInterval(interval);
   }, []);
+
+  const SelectionTooltip = selection ? (
+    <div
+      style={{
+        position: 'fixed',
+        top: selection.rect.top - 40,
+        left: selection.rect.left + selection.rect.width / 2 - 50,
+        zIndex: 1000,
+        background: '#222',
+        color: '#fff',
+        borderRadius: 8,
+        padding: '6px 14px',
+        fontSize: 13,
+        cursor: 'pointer',
+        userSelect: 'none',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+      }}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        setReplyTo({ messageId: selection.messageId, text: selection.text, author: selection.author });
+        clearSelection();
+      }}
+    >
+      Ответить
+    </div>
+  ) : null;
+
   return (
     <div className={classes.container}>
+      {SelectionTooltip}
       <div className={classes.header} style={{ borderBottom: activeChat ? undefined : 'none', background: activeChat ? undefined : '#f7f6f2'  }}>
         <div className={classes.burgerBtn}>
           <IconButton onClick={onBurgerClick}>
@@ -221,6 +254,11 @@ const Chat = ({
                   fileName={m.fileName}
                   fileUrl={m.fileUrl}
                   is_read={m.is_read}
+                  msgId={m.id}
+                  replyQuote={m.reply_quote}
+                  replyAuthor={m.reply_author}
+                  onTouchStart={onTouchStart}
+                  onTouchEnd={onTouchEnd}
                 />
               </React.Fragment>
             );
@@ -236,6 +274,16 @@ const Chat = ({
       )}
       {activeChat && (
         <div className={classes.inputArea}>
+          {replyTo && (
+            <div className={classes.replyBar}>
+              <div className={classes.replyBarContent}>
+                <span className={classes.replyBarLabel}>Ответ на:</span>
+                <span className={classes.replyBarLabel}>{replyTo.author}</span>
+                <span className={classes.replyBarText}>{replyTo.text}</span>
+              </div>
+              <button className={classes.replyBarClose} onClick={cancelReply}>✕</button>
+            </div>
+          )}
           <div className={classes.inputRow}>
             <Input
               autoComplete="off"
