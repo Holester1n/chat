@@ -362,7 +362,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => removeUser(socket.id));
 
   socket.on("send_direct_message", async (msg) => {
-    const { receiver, text, fileUrl, fileName, reply_to_id, reply_quote, reply_author } = msg;
+    const { receiver, text, fileUrl, fileName, reply_to, reply_quote, reply_author } = msg;
     const sender = socket.user.username;
     try {
       let senderId = onlineUsers[sender]?.id;
@@ -403,7 +403,7 @@ io.on("connection", (socket) => {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *`,
         [senderId, receiverId, encrypted, fileUrl || null, fileName || null,
-        reply_to_id || null, reply_quote || null, reply_author || null]
+        reply_to || null, reply_quote || null, reply_author || null]
       );
       const savedMsg = result.rows[0];
       if (receiverSocketId) {
@@ -465,6 +465,7 @@ io.on("connection", (socket) => {
           try {
             return {
               ...row,
+              reply_to: row.reply_to_id,
               text: row.text ? decrypt(row.text) : null,
               fileUrl: row.file_url,
               fileName: row.file_name,
@@ -473,6 +474,7 @@ io.on("connection", (socket) => {
           } catch (e) {
             return {
               ...row,
+              reply_to: row.reply_to_id,
               fileUrl: row.file_url,
               fileName: row.file_name,
               isFile: !!row.file_url,
@@ -486,7 +488,6 @@ io.on("connection", (socket) => {
           before_id,
         };
         
-        console.log("emitting direct_messages_loaded", payload);
         socket.emit("direct_messages_loaded", payload);
       }
     );

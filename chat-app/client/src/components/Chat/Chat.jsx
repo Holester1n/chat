@@ -62,7 +62,7 @@ const Chat = ({
     sendDirectMessage({
       message,
       receiver: activeChat,
-      reply_to_id: replyTo?.messageId ?? null,
+      reply_to: replyTo?.messageId ?? null,
       reply_quote: replyTo?.text ?? null,
       reply_author: replyTo?.author ?? null,
     });
@@ -147,6 +147,22 @@ const Chat = ({
       Ответить
     </div>
   ) : null;
+
+  const scrollToMessage = (messageId) => {
+    if (!messageId) return;
+    const el = scrollContainerRef.current?.querySelector(`[data-msg-id="${messageId}"]`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    const bubble = el.querySelector('[class*="bubble"]');
+    const target = bubble || el;
+    target.style.transition = 'background 0.3s ease';
+    target.style.background = 'rgba(255, 187, 0, 0.35)';
+    setTimeout(() => {
+      target.style.background = '';
+      setTimeout(() => target.style.transition = '', 300);
+    }, 1500);
+  };
 
   return (
     <div className={classes.container}>
@@ -233,7 +249,6 @@ const Chat = ({
                 ? new Date(messages[index - 1].timestamp).toLocaleDateString()
                 : null;
             const showDivider = currentDate !== prevDate;
-
             return (
               <React.Fragment key={m.id}>
                 {showDivider && (
@@ -260,6 +275,8 @@ const Chat = ({
                   onTouchStart={onTouchStart}
                   onTouchMove={onTouchMove}
                   onTouchEnd={onTouchEnd}
+                  replyTo={m.reply_to}
+                  onReplyClick={scrollToMessage}
                 />
               </React.Fragment>
             );

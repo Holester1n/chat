@@ -226,6 +226,8 @@
   transition: transform 0.2s ease;
 }
 
+
+
 @media (max-width: 768px) {
     .message {
         max-width: 85%;

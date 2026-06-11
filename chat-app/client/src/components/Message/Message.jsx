@@ -30,6 +30,8 @@ const Message = ({
   onTouchStart,
   onTouchEnd,
   onTouchMove,
+  replyTo,
+  onReplyClick,
 }) => {
   const innerRef = useRef(null);
   const iconRef = useRef(null);
@@ -146,7 +148,10 @@ const Message = ({
         className={classes.content}
       >
         {replyQuote && (
-          <div className={classes.replyQuote}>
+          <div
+            className={classes.replyQuote}
+            onClick={() => onReplyClick?.(replyTo)}
+          >
             <span className={classes.replyQuoteLine} />
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <span className={classes.replyQuoteAuthor}>{replyAuthor}</span>

@@ -16,6 +16,7 @@
     padding: 24px 36px;
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
+    overflow-x: hidden;
 }
 
 .inputArea {
@@ -128,6 +129,15 @@
   font-size: 14px;
   padding: 0 2px;
   flex-shrink: 0;
+}
+
+.highlighted .bubble {
+  animation: highlight 1.5s ease forwards;
+}
+
+@keyframes highlight {
+  0%   { background: rgba(255, 187, 0, 0.35); }
+  100% { background: #e8e6df; }
 }
 
 @media (max-width: 768px) {
