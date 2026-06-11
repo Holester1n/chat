@@ -83,6 +83,10 @@ function App() {
     }
   );
 
+  const totalUnread = users
+    .filter(u => u.username !== username && u.username !== activeChat)
+    .reduce((sum, u) => sum + (Number(u.unread_count) || 0), 0);
+
   const handleSendDirectMessage = () => {
     sendDirectMessage({ message, receiver: activeChat });
     setMessage("");
@@ -150,6 +154,7 @@ function App() {
         loadingMore={loadingMore}
         loadMore={loadMore}
         sendDirectMessage={sendDirectMessage}
+        totalUnread={totalUnread}
       />
       {profileUser && (
         <ProfileModal

@@ -26,7 +26,8 @@ const Chat = ({
   hasMore,
   loadingMore,
   loadMore,
-  sendDirectMessage
+  sendDirectMessage,
+  totalUnread,
 }) => {
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -182,6 +183,27 @@ const Chat = ({
               <line x1="3" y1="12" x2="21" y2="12" />
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
+            {totalUnread > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: 2,
+                right: 2,
+                background: '#ffbb00',
+                color: '#fff',
+                borderRadius: '50%',
+                fontSize: 10,
+                fontWeight: 700,
+                minWidth: 16,
+                height: 16,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 3px',
+                lineHeight: 1,
+              }}>
+                {totalUnread > 99 ? '99+' : totalUnread}
+              </span>
+            )}
           </IconButton>
         </div>
         {activeChat && (
@@ -286,7 +308,7 @@ const Chat = ({
       )}
 
       {showScrollBtn && (
-        <button onClick={scrollToBottom} className={classes.scrollBtn}>
+        <button onClick={scrollToBottom} className={classes.scrollBtn} style={{ bottom: replyTo ? 140 : 80 }}>
           ↓
         </button>
       )}

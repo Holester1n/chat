@@ -122,7 +122,7 @@ const Message = ({
       data-msg-author={username}
       onTouchStart={(e) => onTouchStart(e, msgId, innerRef.current, iconRef.current)}
       onTouchMove={onTouchMove}
-      onTouchEnd={(e) => onTouchEnd(e, msgId, text, username)}
+      onTouchEnd={(e) => onTouchEnd(e, msgId, text || (isFile ? fileName : null), username)}
     >
       <div ref={iconRef} className={classes.swipeIcon} style={{ opacity: 0 }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"

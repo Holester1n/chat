@@ -10,6 +10,7 @@
   cursor: pointer;
   transition: background 0.2s, transform 0.15s;
   flex-shrink: 0;
+  position: relative;
 }
 
 .btn:hover {
