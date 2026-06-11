@@ -38,7 +38,7 @@ const Chat = ({
   const [replyTo, setReplyTo] = useState(null);
   const { selection, clear: clearSelection } = useTextSelection(scrollContainerRef);
   
-  const { onTouchStart, onTouchEnd } = useSwipeReply((messageId, messageText, messageAuthor) => {
+  const { onTouchStart, onTouchEnd, onTouchMove, swipingId, swipeX } = useSwipeReply((messageId, messageText, messageAuthor) => {
     setReplyTo({ messageId, text: messageText, author: messageAuthor });
   });
   const cancelReply = () => setReplyTo(null);
@@ -258,6 +258,7 @@ const Chat = ({
                   replyQuote={m.reply_quote}
                   replyAuthor={m.reply_author}
                   onTouchStart={onTouchStart}
+                  onTouchMove={onTouchMove}
                   onTouchEnd={onTouchEnd}
                 />
               </React.Fragment>

@@ -10,7 +10,7 @@
     margin: 2px 0;
     max-width: 62%;
     animation: fadeIn 0.18s ease;
-    gap: 8px;
+    position: relative;
 }
 
 .own {
@@ -195,6 +195,34 @@
   font-weight: 600;
   color: #ffbb00;
   margin-bottom: 1px;
+}
+
+.swipeIcon {
+  position: absolute;
+  right: calc(100% - 24px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.messageInner {
+    display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+  will-change: transform;
+  touch-action: pan-y;
+}
+
+.messageInner.swiping {
+  transition: none;
+}
+
+.messageInner.returning {
+  transition: transform 0.2s ease;
 }
 
 @media (max-width: 768px) {

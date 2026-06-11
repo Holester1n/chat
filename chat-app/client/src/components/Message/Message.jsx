@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import classes from "./Message.module.css";
 
 const getFileType = (name) => {
@@ -29,7 +29,9 @@ const Message = ({
   replyAuthor,
   onTouchStart,
   onTouchEnd,
+  onTouchMove,
 }) => {
+  const innerRef = useRef(null);
   const isOwn =
     username === currentUser ||
     (currentUserId && userId && String(userId) === String(currentUserId));
@@ -115,9 +117,11 @@ const Message = ({
       className={`${classes.message} ${isOwn ? classes.own : classes.other}`}
       data-msg-id={msgId}
       data-msg-author={username}
-      onTouchStart={onTouchStart}
-      onTouchEnd={(e) => onTouchEnd?.(e, msgId, text, username)}
+      onTouchStart={(e) => onTouchStart(e, msgId, innerRef.current)}
+      onTouchMove={onTouchMove}
+      onTouchEnd={(e) => onTouchEnd(e, msgId, text, username)}
     >
+      <div ref={innerRef} className={classes.messageInner}>
       {!isOwn && (
         <img
           className={classes.avatar}
@@ -129,7 +133,10 @@ const Message = ({
           onClick={() => onProfileClick(username)}
         />
       )}
-      <div className={classes.content}>
+
+      <div 
+        className={classes.content}
+      >
         {replyQuote && (
           <div className={classes.replyQuote}>
             <span className={classes.replyQuoteLine} />
@@ -214,6 +221,7 @@ const Message = ({
             </>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
