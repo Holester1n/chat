@@ -32,6 +32,7 @@ const Message = ({
   onTouchMove,
 }) => {
   const innerRef = useRef(null);
+  const iconRef = useRef(null);
   const isOwn =
     username === currentUser ||
     (currentUserId && userId && String(userId) === String(currentUserId));
@@ -117,10 +118,17 @@ const Message = ({
       className={`${classes.message} ${isOwn ? classes.own : classes.other}`}
       data-msg-id={msgId}
       data-msg-author={username}
-      onTouchStart={(e) => onTouchStart(e, msgId, innerRef.current)}
+      onTouchStart={(e) => onTouchStart(e, msgId, innerRef.current, iconRef.current)}
       onTouchMove={onTouchMove}
       onTouchEnd={(e) => onTouchEnd(e, msgId, text, username)}
     >
+      <div ref={iconRef} className={classes.swipeIcon} style={{ opacity: 0 }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="#ffbb00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 17 4 12 9 7" />
+          <path d="M20 18v-2a4 4 0 00-4-4H4" />
+        </svg>
+      </div>
       <div ref={innerRef} className={classes.messageInner}>
       {!isOwn && (
         <img

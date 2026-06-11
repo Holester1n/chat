@@ -4,10 +4,12 @@ export function useSwipeReply(onReply) {
   const startX = useRef(null);
   const currentEl = useRef(null);
   const currentDx = useRef(0);
+  const iconEl = useRef(null);
 
-  const onTouchStart = (e, messageId, innerEl) => {
+  const onTouchStart = (e, messageId, innerEl, icon) => {
     startX.current = e.touches[0].clientX;
     currentEl.current = innerEl;
+    iconEl.current = icon;
     currentDx.current = 0;
   };
 
@@ -18,6 +20,9 @@ export function useSwipeReply(onReply) {
     const clamped = Math.min(dx, 50);
     currentDx.current = clamped;
     currentEl.current.style.transform = `translateX(-${clamped}px)`;
+    if (iconEl.current) {
+      iconEl.current.style.opacity = Math.min(clamped / 45, 1);
+    }
   };
 
   const onTouchEnd = (e, messageId, messageText, messageAuthor) => {
@@ -32,10 +37,19 @@ export function useSwipeReply(onReply) {
       }, 200);
     }
 
+    if (iconEl.current) {
+      iconEl.current.style.transition = 'opacity 0.2s ease';
+      iconEl.current.style.opacity = 0;
+      setTimeout(() => {
+        if (iconEl.current) iconEl.current.style.transition = '';
+      }, 200);
+    }
+
     if (dx > 45) onReply(messageId, messageText, messageAuthor);
 
     startX.current = null;
     currentEl.current = null;
+    iconEl.current = null;
     currentDx.current = 0;
   };
 
