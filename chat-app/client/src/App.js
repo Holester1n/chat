@@ -97,6 +97,16 @@ function App() {
     document.title = total > 0 ? `(${total}) Fluxly` : 'Fluxly';
   }, [users]);
 
+  useEffect(() => {
+    const handle = (e) => {
+      if (e.key === 'Escape' && activeChat) {
+        setActiveChatAndClear(null);
+      }
+    };
+    document.addEventListener('keydown', handle);
+    return () => document.removeEventListener('keydown', handle);
+  }, [activeChat]);
+
   if (!isLoggedIn) {
     return (
       <RegisterWindow

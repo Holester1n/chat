@@ -1,5 +1,10 @@
 import { useEffect, useState, useRef } from "react";
+let audioCtx = null;
 
+const getAudioContext = () => {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+};
 export function useSocket(
   socket,
   { username, activeChat, currentUserId, onNewDirectMessage }
@@ -13,6 +18,27 @@ export function useSocket(
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
+  const playNotification = async () => {
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') await ctx.resume();
+
+    const playTone = (freq, startTime, duration) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, startTime);
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.12, startTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+
+    playTone(620, ctx.currentTime, 0.25);
+    playTone(820, ctx.currentTime + 0.15, 0.35);
+  };
   useEffect(() => {
     socket.on("receive_direct_message", (msg) => {
       setDirectMessages((prev) => [
@@ -28,6 +54,7 @@ export function useSocket(
       if (msg.sender === activeChatRef.current) {
         socket.emit("mark_as_read", { reader: username, sender: msg.sender });
       }
+      if (msg.sender !== username) playNotification(); 
     });
 
     socket.on("messages_read", ({ by, from }) => {
