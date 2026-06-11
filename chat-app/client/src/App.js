@@ -109,27 +109,39 @@ function App() {
   }, [activeChat]);
 
   useEffect(() => {
-    const el = appRef.current;
-    if (!el) return;
     let startX = null;
+    let opened = false;
 
     const onTouchStart = (e) => {
-      startX = e.touches[0].clientX;
-    };
-
-    const onTouchEnd = (e) => {
-      if (startX === null) return;
-      const dx = e.changedTouches[0].clientX - startX;
-      if (startX < 50 && dx > 60) {
-        setSidebarOpen(true);
+      if (e.touches[0].clientX < 50) {
+        startX = e.touches[0].clientX;
+        opened = false;
       }
-      startX = null;
     };
 
+    const onTouchMove = (e) => {
+      if (startX === null || opened) return;
+      const dx = e.touches[0].clientX - startX;
+      if (dx > 40) {
+        setSidebarOpen(true);
+        opened = true;
+        startX = null;
+      }
+    };
+
+    const onTouchEnd = () => {
+      startX = null;
+      opened = false;
+    };
+
+    const el = appRef.current;
+    if (!el) return;
     el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: true });
     el.addEventListener('touchend', onTouchEnd, { passive: true });
     return () => {
       el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
     };
   }, []);

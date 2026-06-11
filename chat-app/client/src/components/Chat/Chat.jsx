@@ -7,6 +7,7 @@ import IconButton from "../UI/IconButton/IconButton";
 import { useEffect, useRef, useState } from "react";
 import { useSwipeReply } from '../../hooks/useSwipeReply';
 import { useTextSelection } from '../../hooks/useTextSelection';
+import MessageInput from "../UI/MessageInput/MessageInput";
 
 const Chat = ({
   messages,
@@ -338,7 +339,7 @@ const Chat = ({
                 e.target.value = "";
               }}
             />
-            <Input
+            <MessageInput
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"

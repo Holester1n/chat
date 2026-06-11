@@ -1,0 +1,27 @@
+.input {
+  border: 1px #ffbb00 solid;
+  padding: 8px 14px;
+  border-radius: 999px;
+  flex: 1;
+  width: 100%;
+  font-size: 15px;
+  height: 38px;
+  background-color: #f7f6f2;
+  outline: none;
+  overflow-y: auto;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  scrollbar-width: none;
+  box-sizing: border-box;
+}
+
+.input::-webkit-scrollbar {
+  display: none;
+}
+
+.input[data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: #a09890;
+  pointer-events: none;
+}
