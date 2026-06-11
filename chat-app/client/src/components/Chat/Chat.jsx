@@ -39,8 +39,9 @@ const Chat = ({
   const [replyTo, setReplyTo] = useState(null);
   const { selection, clear: clearSelection } = useTextSelection(scrollContainerRef);
   
-  const { onTouchStart, onTouchEnd, onTouchMove, swipingId, swipeX } = useSwipeReply((messageId, messageText, messageAuthor) => {
+  const { onTouchStart, onTouchMove, onTouchEnd } = useSwipeReply((messageId, messageText, messageAuthor) => {
     setReplyTo({ messageId, text: messageText, author: messageAuthor });
+    setTimeout(() => inputRef.current?.focus(), 50);
   });
   const cancelReply = () => setReplyTo(null);
 
@@ -143,6 +144,7 @@ const Chat = ({
         e.preventDefault();
         setReplyTo({ messageId: selection.messageId, text: selection.text, author: selection.author });
         clearSelection();
+        setTimeout(() => inputRef.current?.focus(), 50);
       }}
     >
       Ответить
@@ -338,6 +340,9 @@ const Chat = ({
             />
             <Input
               autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
               ref={inputRef}
               value={message}
               onKeyDown={(e) => {

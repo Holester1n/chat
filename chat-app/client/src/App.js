@@ -107,6 +107,30 @@ function App() {
     return () => document.removeEventListener('keydown', handle);
   }, [activeChat]);
 
+  useEffect(() => {
+    let startX = null;
+
+    const onTouchStart = (e) => {
+      startX = e.touches[0].clientX;
+    };
+
+    const onTouchEnd = (e) => {
+      if (startX === null) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      if (startX < 40 && dx > 60) {
+        setSidebarOpen(true);
+      }
+      startX = null;
+    };
+
+    document.addEventListener('touchstart', onTouchStart);
+    document.addEventListener('touchend', onTouchEnd);
+    return () => {
+      document.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('touchend', onTouchEnd);
+    };
+  }, []);
+
   if (!isLoggedIn) {
     return (
       <RegisterWindow
