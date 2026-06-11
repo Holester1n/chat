@@ -3,11 +3,11 @@
   Fluxly
 </h1>
 
-A real-time messaging app built as an alternative to blocked messengers
+A real-time messaging app built as an alternative to blocked messengers  
 [telegram channel with updates](https://t.me/fluxlyme)
 
 ## Live demo
-[fluxly.me](https://fluxly.me/) 
+[fluxly.me](https://fluxly.me/)
 
 ## Stack
 - React + CSS Modules
@@ -21,15 +21,12 @@ A real-time messaging app built as an alternative to blocked messengers
 - Deployed on Railway + Vercel
 
 ## Features
-- Real-time messaging via WebSocket
-- Direct messages
+- Real-time messaging with AES-256-CBC encryption at rest
 - File sharing (images, video, audio, any file)
-- User registration with email verification
-- Password reset via email
-- Message encryption at rest (AES-256-CBC)
-- User profiles with avatars and bio
-- User search by username
-- Mobile-friendly UI
+- Message replies with quote — swipe on mobile, text selection on desktop
+- User registration with email verification and password reset
+- Online status, read receipts, unread counters
+- PWA support, mobile-friendly with swipe gestures
 
 ## Running locally
 
@@ -52,8 +49,6 @@ Create a `.env` file in the server folder:
 DATABASE_URL=your_postgres_url
 JWT_SECRET=your_secret
 ENCRYPTION_KEY=your_32_byte_hex_key
-GMAIL_USER=your_gmail
-GMAIL_PASS=your_app_password
 RESEND_API_KEY=your_resend_key
 ```
 
