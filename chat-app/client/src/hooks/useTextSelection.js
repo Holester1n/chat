@@ -19,7 +19,7 @@ export function useTextSelection(containerRef) {
         rect 
       });
     };
-    document.addEventListener('mouseup', handle);
+    document.addEventListener('selectionchange', handle);
     return () => document.removeEventListener('mouseup', handle);
   }, []);
 
