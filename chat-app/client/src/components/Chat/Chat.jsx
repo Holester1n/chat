@@ -345,6 +345,7 @@ const Chat = ({
               spellCheck="false"
               ref={inputRef}
               value={message}
+              name="fluxly-msg-input-x7k"
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSend();
               }}

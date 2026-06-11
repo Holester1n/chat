@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import Chat from "./components/Chat/Chat";
 import RegisterWindow from "./components/RegisterWindow/RegisterWindow";
@@ -34,6 +34,7 @@ function App() {
   const [message, setMessage] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileUser, setProfileUser] = useState(null);
+  const appRef = useRef(null);
 
   const {
     username,
@@ -108,6 +109,8 @@ function App() {
   }, [activeChat]);
 
   useEffect(() => {
+    const el = appRef.current;
+    if (!el) return;
     let startX = null;
 
     const onTouchStart = (e) => {
@@ -117,17 +120,17 @@ function App() {
     const onTouchEnd = (e) => {
       if (startX === null) return;
       const dx = e.changedTouches[0].clientX - startX;
-      if (startX < 40 && dx > 60) {
+      if (startX < 50 && dx > 60) {
         setSidebarOpen(true);
       }
       startX = null;
     };
 
-    document.addEventListener('touchstart', onTouchStart);
-    document.addEventListener('touchend', onTouchEnd);
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
     return () => {
-      document.removeEventListener('touchstart', onTouchStart);
-      document.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchend', onTouchEnd);
     };
   }, []);
 
@@ -151,7 +154,7 @@ function App() {
   }
 
   return (
-    <div className="app">
+    <div className="app" ref={appRef}>
       {sidebarOpen && (
         <div className="overlay" onClick={() => setSidebarOpen(false)} />
       )}
