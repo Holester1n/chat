@@ -1,5 +1,7 @@
+require("./instrument.js");
 require("dotenv").config();
 const express = require("express");
+const Sentry = require("@sentry/node");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
@@ -67,6 +69,7 @@ const decrypt = (text) => {
 const ALLOWED_ORIGINS = ["https://fluxly.me", "http://localhost:3001", "https://chat-ashen-gamma-22.vercel.app"];
 
 const app = express();
+
 app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 
@@ -526,6 +529,15 @@ app.get("/users", async (req, res) => {
   const result = await db.query("SELECT username FROM users");
   res.json(result.rows);
 });
+
+app.get("/debug-sentry", function mainHandler(req, res) {
+  Sentry.logger.info('User triggered test error', {
+    action: 'test_error_endpoint',
+  });
+  throw new Error("My first Sentry error!");
+});
+
+Sentry.setupExpressErrorHandler(app);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, "0.0.0.0", () => {
