@@ -1,0 +1,93 @@
+.player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: #e8e6df;
+  min-width: 220px;
+  max-width: 280px;
+  position: relative;
+}
+
+.player.own {
+  background: #ffbb00;
+}
+
+.playBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.12);
+  color: #1c1917;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.playBtn:hover {
+  background: rgba(0,0,0,0.2);
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.fileName {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1c1917;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progressWrap {
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.progressBg {
+  height: 3px;
+  background: rgba(0,0,0,0.15);
+  border-radius: 2px;
+  position: relative;
+}
+
+.progressFill {
+  height: 100%;
+  background: #1c1917;
+  border-radius: 2px;
+  transition: width 0.1s linear;
+}
+
+.player.own .progressFill {
+  background: rgba(0,0,0,0.5);
+}
+
+.time {
+  font-size: 11px;
+  color: rgba(28,25,23,0.6);
+}
+
+.meta {
+  position: absolute;
+  bottom: 6px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.metaTime {
+  font-size: 11px;
+  color: rgba(28, 25, 23, 0.6);
+}

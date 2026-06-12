@@ -226,7 +226,16 @@
   transition: transform 0.2s ease;
 }
 
+.link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
 
+.link:hover {
+  opacity: 0.75;
+}
 
 @media (max-width: 768px) {
     .message {

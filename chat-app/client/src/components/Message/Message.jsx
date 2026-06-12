@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
 import classes from "./Message.module.css";
+import AudioPlayer from '../AudioPlayer/AudioPlayer';
 
 const getFileType = (name) => {
   if (!name) return "file";
@@ -9,6 +10,27 @@ const getFileType = (name) => {
   if (["mp4", "webm", "ogg", "mov"].includes(ext)) return "video";
   if (["mp3", "wav", "ogg", "aac"].includes(ext)) return "audio";
   return "file";
+};
+
+const renderText = (text) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) => {
+    if (/^https?:\/\/[^\s]+$/.test(part)) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={classes.link}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
 };
 
 const Message = ({
@@ -38,9 +60,11 @@ const Message = ({
   const isOwn =
     username === currentUser ||
     (currentUserId && userId && String(userId) === String(currentUserId));
+  
+
 
   const renderContent = () => {
-    if (!isFile) return <span className={classes.text}>{text}</span>;
+    if (!isFile) return <span className={classes.text}>{renderText(text)}</span>;
     if (!fileUrl) return null;
 
     const type = getFileType(fileName);
@@ -95,7 +119,7 @@ const Message = ({
     if (type === "video")
       return <video src={fileUrl} controls className={classes.mediaVideo} />;
     if (type === "audio")
-      return <audio src={fileUrl} controls className={classes.mediaAudio} />;
+      return <AudioPlayer src={fileUrl} fileName={fileName} isOwn={isOwn} timestamp={timestamp} is_read={is_read}/>;
     return (
       <a href={fileUrl} download={fileName} className={classes.mediaFile}>
         <svg
@@ -171,7 +195,7 @@ const Message = ({
             </strong>
           )}
           {renderContent()}
-          {!(isFile && getFileType(fileName) === "image") && (
+          {!(isFile && getFileType(fileName) === "image") && !(isFile && getFileType(fileName) === "audio") && (
             <>
               <div
                 style={{
