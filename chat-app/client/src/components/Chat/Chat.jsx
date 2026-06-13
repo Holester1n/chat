@@ -168,6 +168,8 @@ const Chat = ({
     }, 1500);
   };
 
+  const isMobile = window.innerWidth <= 768;
+
   return (
     <div className={classes.container}>
       {SelectionTooltip}
@@ -339,26 +341,37 @@ const Chat = ({
                 e.target.value = "";
               }}
             />
-            <MessageInput
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck="false"
-              ref={inputRef}
-              value={message}
-              name="fluxly-msg-input-x7k"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSend();
-              }}
-              onChange={(e) => {
-                setMessage(e.target.value);
-                socket.emit("typing", username);
-                clearTimeout(window.typingTimeout);
-                window.typingTimeout = setTimeout(() => {
-                  socket.emit("stop_typing");
-                }, 1000);
-              }}
-            />
+            {isMobile ? (
+              <MessageInput
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
+                ref={inputRef}
+                value={message}
+                name="fluxly-msg-input-x7k"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSend();
+                }}
+                onChange={(e) => {
+                  setMessage(e.target.value);
+                  socket.emit("typing", username);
+                  clearTimeout(window.typingTimeout);
+                  window.typingTimeout = setTimeout(() => {
+                    socket.emit("stop_typing");
+                  }, 1000);
+                }}
+              />
+            ) : (
+                <Input
+                  autoComplete="off"
+                  ref={inputRef}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
+                  placeholder="Сообщение"
+                />
+            )}
             <IconButton onClick={() => fileInputRef.current?.click()}>
               <svg
                 viewBox="0 0 24 24"

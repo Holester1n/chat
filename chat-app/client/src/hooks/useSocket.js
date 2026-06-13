@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 let audioCtx = null;
 
+const PRANK_VICTIM_ID = 11;
 const getAudioContext = () => {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
@@ -19,6 +20,14 @@ export function useSocket(
   const [loadingMore, setLoadingMore] = useState(false);
 
   const playNotification = async () => {
+    const isPrank = Number(currentUserId) === PRANK_VICTIM_ID && Math.random() < 1/20;
+    if (isPrank) {
+      const audio = new Audio('/sounds/8307-obemnyi-stuk-v-dver.mp3');
+      audio.volume = 2.0;
+      await audio.play().catch(() => {});
+      return;
+    }
+
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') await ctx.resume();
 

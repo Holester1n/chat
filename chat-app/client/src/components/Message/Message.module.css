@@ -199,7 +199,7 @@
 
 .swipeIcon {
   position: absolute;
-  right: -28px;
+  right: -8px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -207,6 +207,8 @@
   justify-content: center;
   pointer-events: none;
 }
+
+
 
 .messageInner {
     display: flex;
