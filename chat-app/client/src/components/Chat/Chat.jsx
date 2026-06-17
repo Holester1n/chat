@@ -74,7 +74,7 @@ const Chat = ({
     setReplyTo(null);
     clearSelection();
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-    
+
     if (isMobile) {
       setTimeout(() => inputRef.current?.focus(), 50);
   }
@@ -128,6 +128,25 @@ const Chat = ({
     const interval = setInterval(() => setTick((n) => n + 1), 60_000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file && onSendFile) onSendFile(file);
+          break;
+        }
+      }
+    };
+
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+  }, [onSendFile]);
 
   const SelectionTooltip = selection ? (
     <div

@@ -67,11 +67,11 @@ export function useSocket(
 
     socket.on("messages_read", ({ by, from }) => {
       setMessagesByChat(prev => {
-        const chat = prev[from];
+        const chat = prev[by];
         if (!chat) return prev;
         return {
           ...prev,
-          [from]: chat.map(m => m.sender === from ? { ...m, is_read: true } : m),
+          [by]: chat.map(m => m.sender === from ? { ...m, is_read: true } : m),
         };
       });
     });

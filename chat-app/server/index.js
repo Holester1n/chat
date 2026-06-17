@@ -383,6 +383,16 @@ io.on("connection", (socket) => {
         return;
       }
 
+      await db.query(`
+        UPDATE direct_messages 
+        SET is_read = TRUE 
+        WHERE receiver_id = $1 AND sender_id = $2 AND is_read = FALSE
+      `, [senderId, receiverId]);
+
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("messages_read", { by: sender, from: receiver });
+      }
+
       let replyToId = null;
       if (reply_to) {
         const check = await db.query(
