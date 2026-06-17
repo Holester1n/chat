@@ -22,6 +22,13 @@ const socket = io(SERVER_URL, {
   autoConnect: false,
 });
 
+socket.on("connect_error", (err) => {
+  if (err.message === "Invalid token" || err.message === "Unauthorized") {
+    localStorage.clear();
+    window.location.reload();
+  }
+});
+
 socket.on("reconnect_attempt", () => {
   socket.auth.token = localStorage.getItem("token");
 });

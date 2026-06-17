@@ -74,6 +74,10 @@ const Chat = ({
     setReplyTo(null);
     clearSelection();
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    
+    if (isMobile) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+  }
   };
 
   const formatLastSeen = (isoString) => {

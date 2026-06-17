@@ -10,6 +10,24 @@ export function useUsers(socket, { isLoggedIn, username, }) {
   useEffect(() => {
     if (!isLoggedIn || !username) return;
 
+    socket.emit("set_user", username);
+    fetch(`${SERVER_URL}/conversations/${username}`)
+      .then((res) => res.json())
+      .then((data) => setUsers(data));
+
+    const handleConnect = () => socket.emit("set_user", username);
+    const handleOnlineUsers = (list) => setOnlineSet(new Set(list));
+
+    socket.on("connect", handleConnect);
+    socket.on("online_users", handleOnlineUsers);
+
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("online_users", handleOnlineUsers);
+    };
+  }, [isLoggedIn, username]);
+
+  useEffect(() => {
     const handleNewMessage = (msg) => {
       if (msg.sender !== currentChat) {
         setUsers(prev => prev.map(u =>
@@ -20,25 +38,9 @@ export function useUsers(socket, { isLoggedIn, username, }) {
       }
     };
 
-    socket.emit("set_user", username);
-    fetch(`${SERVER_URL}/conversations/${username}`)
-      .then((res) => res.json())
-      .then((data) => setUsers(data));
-
-    const handleConnect = () => socket.emit("set_user", username);
-    socket.on("connect", handleConnect);
-
-    const handleOnlineUsers = (list) => {
-      setOnlineSet(new Set(list));
-    };
-    socket.on("online_users", handleOnlineUsers);
     socket.on("receive_direct_message", handleNewMessage);
-    return () => {
-      socket.off("connect", handleConnect);
-      socket.off("online_users", handleOnlineUsers);
-      socket.off("receive_direct_message", handleNewMessage);
-    };
-  }, [isLoggedIn, username, currentChat]);
+    return () => socket.off("receive_direct_message", handleNewMessage);
+  }, [currentChat]);
 
   const addUserIfMissing = (msg) => {
     setUsers((prev) => {

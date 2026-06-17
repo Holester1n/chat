@@ -1,7 +1,7 @@
 require("./instrument.js");
 require("dotenv").config();
-const express = require("express");
 const Sentry = require("@sentry/node");
+const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
@@ -70,6 +70,7 @@ const ALLOWED_ORIGINS = ["https://fluxly.me", "http://localhost:3001", "https://
 
 const app = express();
 
+app.set('trust proxy', 1);
 app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 
@@ -122,6 +123,7 @@ app.post("/register", async (req, res) => {
     try {
       await sendVerificationEmail(email, code);
     } catch (mailErr) {
+      Sentry.captureException(mailErr);
       console.error("Mail error:", mailErr);
       return res
         .status(500)
@@ -261,6 +263,7 @@ app.post("/forgot-password", async (req, res) => {
     });
     res.json({ success: true });
   } catch (err) {
+    Sentry.captureException(err);
     console.error("Resend error:", err);
     res.status(500).json({ error: "Failed to send email" });
   }
@@ -294,26 +297,6 @@ io.use((socket, next) => {
 });
 
 io.on("connection", (socket) => {
-  socket.onAny(async (event) => {
-    const username = socket.user?.username;
-    if (!username || onlineUsers[username]) return;
-
-    const result = await db.query(
-      "SELECT id, avatar_url FROM users WHERE username = $1",
-      [username]
-    );
-    const user = result.rows[0];
-    if (user) {
-      onlineUsers[username] = {
-        socketId: socket.id,
-        id: user.id,
-        avatar_url: user.avatar_url,
-      };
-      db.query("UPDATE users SET last_seen = NULL WHERE username = $1", [username]);
-      io.emit("online_users", Object.keys(onlineUsers));
-    }
-  });
-  
   (async () => {
     const result = await db.query(`
       SELECT m.id, m.text, m.timestamp, u.username, u.avatar_url
@@ -326,6 +309,7 @@ io.on("connection", (socket) => {
       try {
         return { ...row, text: decrypt(row.text) };
       } catch (e) {
+        Sentry.captureException(e);
         return { ...row, text: row.text };
       }
     });
@@ -399,6 +383,19 @@ io.on("connection", (socket) => {
         return;
       }
 
+      let replyToId = null;
+      if (reply_to) {
+        const check = await db.query(
+          'SELECT id FROM direct_messages WHERE id = $1',
+          [reply_to]
+        );
+        if (check.rows.length > 0) {
+          replyToId = reply_to;
+        } else {
+          console.warn(`reply_to_id ${reply_to} not found, ignoring`);
+        }
+      }
+
       const encrypted = text ? encrypt(text) : null;
       const result = await db.query(
         `INSERT INTO direct_messages 
@@ -406,7 +403,7 @@ io.on("connection", (socket) => {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *`,
         [senderId, receiverId, encrypted, fileUrl || null, fileName || null,
-        reply_to || null, reply_quote || null, reply_author || null]
+        replyToId, reply_quote || null, reply_author || null]
       );
       const savedMsg = result.rows[0];
       if (receiverSocketId) {
@@ -434,6 +431,7 @@ io.on("connection", (socket) => {
         io.emit("online_users", Object.keys(onlineUsers));
       }
     } catch (err) {
+      Sentry.captureException(err);
       console.error("Error saving direct message:", err);
     }
   });
@@ -460,6 +458,7 @@ io.on("connection", (socket) => {
       params,
       (err, result) => {
         if (err) {
+          Sentry.captureException(err);
           console.error("load_direct_messages error:", err);
           return;
         }
@@ -475,6 +474,7 @@ io.on("connection", (socket) => {
               isFile: !!row.file_url,
             };
           } catch (e) {
+            Sentry.captureException(e);
             return {
               ...row,
               reply_to: row.reply_to_id,
@@ -528,13 +528,6 @@ app.get("/users", async (req, res) => {
   }
   const result = await db.query("SELECT username FROM users");
   res.json(result.rows);
-});
-
-app.get("/debug-sentry", function mainHandler(req, res) {
-  Sentry.logger.info('User triggered test error', {
-    action: 'test_error_endpoint',
-  });
-  throw new Error("My first Sentry error!");
 });
 
 Sentry.setupExpressErrorHandler(app);
