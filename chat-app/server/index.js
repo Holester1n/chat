@@ -522,6 +522,52 @@ io.on("connection", (socket) => {
       io.to(senderSocket).emit("messages_read", { by: reader, from: sender });
     }
   });
+
+  socket.on("search_messages", async ({ user2, query }) => {
+    const user1 = socket.user.username;
+    const results = [];
+    let lastId = null;
+    let keepGoing = true;
+    let batchCount = 0;
+    const MAX_BATCHES = 20;
+
+    while (keepGoing && batchCount < MAX_BATCHES) {
+      batchCount++;
+      const cursorClause = lastId ? "AND dm.id < $3" : "";
+      const params = [user1, user2];
+      if (lastId) params.push(lastId);
+
+      const batch = await db.query(`
+        SELECT dm.id, dm.text, dm.timestamp,
+              s.username as sender, s.avatar_url as sender_avatar
+        FROM direct_messages dm
+        JOIN users s ON dm.sender_id = s.id
+        JOIN users r ON dm.receiver_id = r.id
+        WHERE ((s.username = $1 AND r.username = $2) OR (s.username = $2 AND r.username = $1))
+        ${cursorClause}
+        ORDER BY dm.id DESC
+        LIMIT 100
+      `, params);
+
+      if (batch.rows.length === 0) break;
+
+      const decrypted = batch.rows.map(row => ({
+        ...row,
+        text: row.text ? decrypt(row.text) : null,
+      }));
+
+      const matched = decrypted.filter(m =>
+        m.text?.toLowerCase().includes(query.toLowerCase())
+      );
+
+      results.push(...matched);
+      lastId = batch.rows[batch.rows.length - 1].id;
+
+      if (batch.rows.length < 100) keepGoing = false;
+    }
+
+    socket.emit("search_results", results.reverse());
+  });
 });
 app.get("/", (req, res) => {
   res.send("Server is running");

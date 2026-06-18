@@ -39,6 +39,11 @@ const Chat = ({
   const topSentinelRef = useRef(null);
   const [replyTo, setReplyTo] = useState(null);
   const { selection, clear: clearSelection } = useTextSelection(scrollContainerRef);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
   
   const { onTouchStart, onTouchMove, onTouchEnd } = useSwipeReply((messageId, messageText, messageAuthor) => {
     setReplyTo({ messageId, text: messageText, author: messageAuthor });
@@ -59,8 +64,21 @@ const Chat = ({
     setShowScrollBtn(!isNearBottom);
   };
 
-  const handleSend = () => {
+  const handleSend = async (e) => {
+    e?.preventDefault();
+    
     if (!message.trim()) return;
+
+    const inputElement = inputRef.current;
+    
+    if (isMobile && inputElement) {
+      const handleBlur = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      
+      inputElement.addEventListener('blur', handleBlur, { once: true });
+    }
 
     sendDirectMessage({
       message,
@@ -73,11 +91,17 @@ const Chat = ({
     setMessage("");
     setReplyTo(null);
     clearSelection();
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
 
-    if (isMobile) {
-      setTimeout(() => inputRef.current?.focus(), 50);
-  }
+    if (isMobile && inputElement) {
+      flushSync(() => {
+      });
+      
+      if (document.activeElement !== inputElement) {
+        inputElement.focus({ preventScroll: true });
+      }
+    }
+
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   };
 
   const formatLastSeen = (isoString) => {
@@ -148,6 +172,21 @@ const Chat = ({
     return () => document.removeEventListener("paste", handlePaste);
   }, [onSendFile]);
 
+  useEffect(() => {
+    const handleResults = (results) => {
+      setSearchResults(results);
+      setSearching(false);
+    };
+    socket.on("search_results", handleResults);
+    return () => socket.off("search_results", handleResults);
+  }, []);
+
+  const handleSearch = () => {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    socket.emit("search_messages", { user2: activeChat, query: searchQuery });
+  };
+
   const SelectionTooltip = selection ? (
     <div
       style={{
@@ -196,66 +235,122 @@ const Chat = ({
   return (
     <div className={classes.container}>
       {SelectionTooltip}
-      <div className={classes.header} style={{ borderBottom: activeChat ? undefined : 'none', background: activeChat ? undefined : '#f7f6f2'  }}>
+      <div className={classes.header} style={{ borderBottom: activeChat ? undefined : 'none', background: activeChat ? undefined : '#f7f6f2' }}>
         <div className={classes.burgerBtn}>
           <IconButton onClick={onBurgerClick}>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="3" y1="6" x2="21" y2="6" />
               <line x1="3" y1="12" x2="21" y2="12" />
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
             {totalUnread > 0 && (
               <span style={{
-                position: 'absolute',
-                top: 2,
-                right: 2,
-                background: '#ffbb00',
-                color: '#fff',
-                borderRadius: '50%',
-                fontSize: 10,
-                fontWeight: 700,
-                minWidth: 16,
-                height: 16,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0 3px',
-                lineHeight: 1,
+                position: 'absolute', top: 2, right: 2,
+                background: '#ffbb00', color: '#fff',
+                borderRadius: '50%', fontSize: 10, fontWeight: 700,
+                minWidth: 16, height: 16, display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                padding: '0 3px', lineHeight: 1,
               }}>
                 {totalUnread > 99 ? '99+' : totalUnread}
               </span>
             )}
           </IconButton>
         </div>
+
         {activeChat && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              lineHeight: 1.2,
-              gap: 2,
-            }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2, gap: 2, flex: 1 }}>
             <span style={{ fontWeight: 600 }}>{activeChat}</span>
-            <span
-              style={{
-                fontSize: 11,
-                color: onlineSet?.has(activeChat) ? "#22c55e" : "#a09890",
-              }}
-            >
-              {onlineSet?.has(activeChat)
-                ? "● онлайн"
-                : formatLastSeen(
-                    users.find((u) => u.username === activeChat)?.last_seen
-                  )}
+            <span style={{ fontSize: 11, color: onlineSet?.has(activeChat) ? "#22c55e" : "#a09890" }}>
+              {onlineSet?.has(activeChat) ? "● онлайн" : formatLastSeen(users.find((u) => u.username === activeChat)?.last_seen)}
             </span>
+          </div>
+        )}
+
+        {activeChat && (
+          <div style={{ position: 'relative', marginLeft: 'auto' }}>
+            <IconButton onClick={() => setMenuOpen(p => !p)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" />
+              </svg>
+            </IconButton>
+
+            {menuOpen && (
+              <div style={{
+                position: 'absolute', right: 0, top: '100%', zIndex: 100,
+                background: '#fff', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                minWidth: 160, padding: '4px 0',
+              }}>
+                <div
+                  style={{ padding: '10px 16px', cursor: 'pointer', fontSize: 14 }}
+                  onClick={() => { setSearchOpen(true); setMenuOpen(false); }}
+                >
+                  🔍 Поиск по переписке
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {searchOpen && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            background: 'rgba(0,0,0,0.4)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+          }} onClick={() => { setSearchOpen(false); setSearchResults([]); setSearchQuery(""); }}>
+            <div style={{
+              background: '#fff', borderRadius: 14, padding: 24,
+              width: '90%', maxWidth: 480, maxHeight: '70vh',
+              display: 'flex', flexDirection: 'column', gap: 12,
+            }} onClick={e => e.stopPropagation()}>
+              <div style={{ fontWeight: 600, fontSize: 16 }}>Поиск по переписке</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  autoFocus
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
+                  placeholder="Введите текст..."
+                  style={{
+                    flex: 1, border: '1.5px solid #e0d8d0', borderRadius: 8,
+                    padding: '8px 12px', fontSize: 14, outline: 'none',
+                  }}
+                />
+                <button
+                  onClick={handleSearch}
+                  style={{
+                    background: '#ffbb00', border: 'none', borderRadius: 8,
+                    padding: '8px 16px', fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  Найти
+                </button>
+              </div>
+
+              <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {searching && <div style={{ color: '#a09890', fontSize: 13, textAlign: 'center' }}>Поиск...</div>}
+                {!searching && searchResults.length === 0 && searchQuery && (
+                  <div style={{ color: '#a09890', fontSize: 13, textAlign: 'center' }}>Ничего не найдено</div>
+                )}
+                {searchResults.map(m => (
+                  <div
+                    key={m.id}
+                    onClick={() => { scrollToMessage(m.id); setSearchOpen(false); }}
+                    style={{
+                      padding: '10px 12px', borderRadius: 10,
+                      background: '#f7f6f2', cursor: 'pointer',
+                      fontSize: 13,
+                    }}
+                  >
+                    <div style={{ fontWeight: 600, marginBottom: 2 }}>{m.sender}</div>
+                    <div style={{ color: '#444' }}>{m.text}</div>
+                    <div style={{ color: '#a09890', fontSize: 11, marginTop: 4 }}>
+                      {new Date(m.timestamp).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -90,11 +90,6 @@ export function useSocket(
   useEffect(() => {
     if (!activeChat) return;
 
-    if (messagesByChat[activeChat]) {
-      socket.emit("mark_as_read", { reader: username, sender: activeChat });
-      return;
-    }
-
     setHasMoreByChat(prev => ({ ...prev, [activeChat]: false }));
 
     const handleLoaded = ({ messages: loadedMessages, hasMore, before_id }) => {
@@ -135,15 +130,19 @@ export function useSocket(
     const oldest = directMessages[0];
 
     const handleLoaded = ({ messages: loadedMessages, hasMore, before_id }) => {
-      if (!before_id) return;
       const safeMessages = Array.isArray(loadedMessages) ? loadedMessages : [];
-      setMessagesByChat(prev => ({
-        ...prev,
-        [activeChat]: [...safeMessages, ...(prev[activeChat] || [])],
-      }));
+      setMessagesByChat(prev => {
+        const existing = prev[activeChat] || [];
+        if (before_id) {
+          const existingIds = new Set(existing.map(m => m.id));
+          const newMessages = safeMessages.filter(m => !existingIds.has(m.id));
+          return { ...prev, [activeChat]: [...newMessages, ...existing] };
+        } else {
+          return { ...prev, [activeChat]: safeMessages };
+        }
+      });
       setHasMoreByChat(prev => ({ ...prev, [activeChat]: hasMore ?? false }));
       setLoadingMore(false);
-      socket.off("direct_messages_loaded", handleLoaded);
     };
 
     socket.on("direct_messages_loaded", handleLoaded);
