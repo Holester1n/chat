@@ -1,4 +1,5 @@
 import React from "react";
+import { flushSync } from 'react-dom';
 import classes from "./Chat.module.css";
 import Message from "../Message/Message";
 import Button from "../UI/button/Button";
